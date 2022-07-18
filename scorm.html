@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="windows-1252">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scorm</title>
+</head>
+<body>
+    <script>
+        
+        window.onload = function() {
+            const queryString = window.location.search;
+            const urlParams = new URLSearchParams(queryString);
+            const questao = urlParams.get('questao');
+
+            if (questao == null) {
+                nq = 1;
+            }
+            else {
+                nq = parseInt(questao);
+            }
+            document.getElementById("disp").innerHTML = nq + ") ";
+            document.getElementById("questao").setAttribute("value", nq + 1);
+            
+        }
+    </script>
+    <form action="scorm.html" name="responder">
+        <div class="scorm-text" style="font-size: 22px; font-weight: bold;">
+            <input type="hidden" id="questao" name="questao"></input><span style="color: red;" id="disp"></span>Admitir que a regulação do circuito abaixo<br>
+            está no limite de Vimin. Dados: Potência em RL = 0.58 W,<br>
+            LM7806 = 6 V, Vi = 18 Vrms / 60 Hz, Vd = 0.56 V,<br>
+            C = 100.66 uF, calcule a tensão de ondulação no capacitor.<br><br>
+        </div>
+        <input type="text" name="resposta"></input><br><br>
+        <input type="submit" value="ENVIAR"></input>
+    </form>
+</body>
+</html>
