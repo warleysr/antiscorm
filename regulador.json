@@ -6,14 +6,14 @@
         "calcule a tensão de ondulação no capacitor."
     ],
     "formulas": {
-        "Vpsec": "$2",
-        "ViMax": "$Vpsec - $4",
-        "Treg": "$1",
-        "ViMin": "$Treg + 3",
-        "Vond": "$ViMax - $ViMin",
-        "Imax0": "$Treg / $0",
-        "Imax1": "$0 / $Treg",
-        "C": "$Imax / ($3 * $Vond)"
+        "Vpsec": "${2}",
+        "ViMax": "${Vpsec} - ${4}",
+        "Treg": "${1}",
+        "ViMin": "${Treg} + 3",
+        "Vond": "${ViMax} - ${ViMin}",
+        "Imax0": "${Treg} / ${0}",
+        "Imax1": "${0} / ${Treg}",
+        "C": "${Imax} / (${3} * ${Vond})"
     },
     "condicionais": {
         "Imax": {

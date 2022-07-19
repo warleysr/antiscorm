@@ -4,11 +4,74 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 from constants import Constants, Conversions
 from pdf.pdf_handler import PdfHandler as pdfh
+from json.decoder import JSONDecodeError
 from ctypes import windll
+import PySimpleGUI as Sg
 import json
+import re
 
 
 antiscorm = {}
+
+
+def start_interface():
+    gen_font = "Arial 12 bold"
+    layout = [
+        [
+            Sg.Push(),
+            Sg.Text("AntiScorm", text_color="lightgreen", font="Arial 22 bold"),
+            Sg.Push(),
+        ],
+        [Sg.Text("Cole abaixo o link direto do SCORM: ", font=gen_font)],
+        [Sg.InputText(tooltip="Link da janela que abre ao iniciar a atividade")],
+        [Sg.Text("Escolha o arquivo de configuração: ", font=gen_font)],
+        [
+            Sg.InputText("Nenhum selecionado", disabled=True),
+            Sg.FileBrowse("Procurar", file_types=[("Arquivo JSON", ".json")]),
+        ],
+        [
+            Sg.Push(),
+            Sg.Button(
+                "Iniciar AntiScorm", button_color=("black", "lightgreen"), font=gen_font
+            ),
+            Sg.Push(),
+        ],
+    ]
+    window = Sg.Window("AntiScorm", layout)
+
+    while True:
+        event, values = window.read()
+        if event == Sg.WIN_CLOSED:
+            break
+        elif event == "Iniciar AntiScorm":
+            url = values[0]
+            filepath = values[1]
+            url_pattern = "^https?:\\/\\/(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)$"
+            if re.match(url_pattern, url) is None:
+                Sg.PopupError("O link informado não é uma URL válida.", font=gen_font)
+            elif filepath == "Nenhum selecionado":
+                Sg.PopupError(
+                    "Nenhum arquivo de configuração foi selecionado.", font=gen_font
+                )
+            else:
+                try:
+                    with open(filepath, "r") as arq:
+                        global antiscorm
+                        antiscorm = json.load(arq)
+
+                        print("OK")
+                        break
+                except FileNotFoundError:
+                    Sg.PopupError(
+                        "O arquivo selecionado não foi encontrado.", font=gen_font
+                    )
+                except JSONDecodeError:
+                    Sg.PopupError(
+                        "Erro no arquivo de configuração. Fale com o criador do mesmo.",
+                        font=gen_font,
+                    )
+
+    window.close()
 
 
 def start_driver(url):
@@ -31,7 +94,7 @@ def start_driver(url):
     return driver
 
 
-def parse_data():
+def parse_data(driver):
     driver.execute_script("document.body.style.zoom='120%'")
 
     raw_data = driver.find_element(By.CLASS_NAME, "scorm-text").text
@@ -66,15 +129,15 @@ def apply_formulas(values, formulas, text, conditions):
         expr = formulas[form]
         # Apply given values
         for i in range(len(values)):
-            expr = expr.replace(f"${i}", str(values[i]))
+            expr = expr.replace(f"${{{i}}}", str(values[i]))
 
         # Apply constants
         for const in Constants:
-            expr = expr.replace(f"${const.name}", str(const.value))
+            expr = expr.replace(f"${{{const.na3me}}}", str(const.value))
 
         # Apply previous calculated values
         for var, val in calculated.items():
-            expr = expr.replace(f"${var}", str(val))
+            expr = expr.replace(f"${{{var}}}", str(val))
 
         try:
             value = eval(expr)
@@ -96,13 +159,13 @@ def apply_formulas(values, formulas, text, conditions):
     return calculated
 
 
-if __name__ == "__main__":
+def perform_automation():
     driver = start_driver("file://C:\\Users\\Warley\\Documents\\AntiScorm\\scorm.html")
 
     questions = antiscorm["questoes"]
 
     for i in range(1, questions + 1):
-        text, values, raw = parse_data()
+        text, values, raw = parse_data(driver)
 
         calculated = apply_formulas(
             values, antiscorm["formulas"], text, antiscorm["condicionais"]
@@ -121,3 +184,7 @@ if __name__ == "__main__":
     pdfh.generate_pdf(filename)
 
     driver.quit()
+
+
+if __name__ == "__main__":
+    start_interface()
