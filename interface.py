@@ -3,7 +3,8 @@ import json
 import os
 import PySimpleGUI as Sg
 from json.decoder import JSONDecodeError
-from pdf.pdf_handler import PdfHandler as pdfh
+from automation import BrowserAutomation
+from pdf.pdf_handler import PdfHandler
 
 
 class GraphicInterface:
@@ -11,7 +12,7 @@ class GraphicInterface:
         gen_font = "Arial 12 bold"
 
         menu_opt = [
-            ["Opções", ["Inserir imagens no PDF final"]],
+            ["Opções", ["Inserir imagens no PDF final", "Selecionar navegador"]],
             ["Sobre", ["Sobre o AntiScorm"]],
         ]
 
@@ -46,10 +47,10 @@ class GraphicInterface:
             if event == Sg.WIN_CLOSED:
                 break
             elif event == "Iniciar AntiScorm":
-                url = values[0]
-                filepath = values[1]
+                url = values[1]
+                filepath = values[2]
                 url_pattern = "^https?:\\/\\/(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)$"
-                if url is None or re.match(url_pattern, url) is None:
+                if False and (url is None or re.match(url_pattern, url) is None):
                     Sg.PopupError(
                         "O link informado não é uma URL válida.", font=gen_font
                     )
@@ -60,11 +61,12 @@ class GraphicInterface:
                 else:
                     try:
                         with open(filepath, "r") as arq:
-                            global antiscorm
                             antiscorm = json.load(arq)
 
-                            print("OK")
+                            window.disappear()
+                            BrowserAutomation.perform_automation(url, antiscorm)
                             break
+
                     except FileNotFoundError:
                         Sg.PopupError(
                             "O arquivo selecionado não foi encontrado.", font=gen_font
@@ -107,12 +109,14 @@ class GraphicInterface:
                     continue
 
                 # Start placing images on PDF
-                pdfh.insert_images(filepath, folderpath, folder)
+                PdfHandler.insert_images(filepath, folderpath, folder)
 
                 Sg.PopupOK(
                     f"Foram inseridas {img_count} imagens no PDF final.", font=gen_font
                 )
 
+            elif event == "Selecionar navegador":
+                self.select_browser()
             elif event == "Sobre o AntiScorm":
                 Sg.PopupOK(
                     "Versão: 1.0.0\n\nO AntiScorm foi criado com o objetivo de facilitar a"
@@ -123,5 +127,36 @@ class GraphicInterface:
                     title=event,
                     font=gen_font,
                 )
+
+        window.close()
+
+    def finish_popup(scorm_name):
+        Sg.PopupOK(
+            f"Scorm '{scorm_name}' executado com sucesso!"
+            + " Verifique o PDF na pasta 'finalizados'.",
+            title="AntiScorm",
+            font="Arial 12 bold",
+        )
+
+    def select_browser(self):
+        gen_font = "Arial 12 bold"
+        c = "lightgreen"
+        layout = [
+            [Sg.Text("Selecione o nevegador a ser utilizado:", font=gen_font)],
+            [Sg.Radio("Chrome", "b", default=True, font=gen_font, text_color=c)],
+            [Sg.Radio("Firefox", "b", font=gen_font, text_color=c)],
+            [Sg.Radio("Edge", "b", font=gen_font, text_color=c)],
+            [Sg.Radio("Opera", "b", font=gen_font, text_color=c)],
+            [Sg.Push(), Sg.Button("Salvar"), Sg.Push()],
+        ]
+
+        window = Sg.Window("Selecionar navegador", layout)
+
+        while True:
+            event, values = window.read()
+            if event == Sg.WIN_CLOSED:
+                break
+            elif event == "Salvar":
+                break
 
         window.close()

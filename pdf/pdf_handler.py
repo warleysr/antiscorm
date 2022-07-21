@@ -5,7 +5,8 @@ import fitz
 
 
 class PdfHandler:
-    def generate_pdf(filename):
+    @classmethod
+    def generate_pdf(cls, filename):
         images = os.listdir("images")
         pages = (len(images) // 2) - 1
 
@@ -21,11 +22,15 @@ class PdfHandler:
             page_number = i // 2
             page = document[page_number]
             if (i + 1) % 2:
-                img_rect = fitz.Rect(0, 0, 200, 287)
+                img_rect = fitz.Rect(7, 7, 200, 290)
             else:
-                img_rect = fitz.Rect(0, 305, 200, 585)
+                img_rect = fitz.Rect(7, 305, 200, 585)
 
-            page.insert_image(img_rect, filename=f"images/{images[i]}")
+            page.insert_image(
+                img_rect,
+                filename=f"images/{images[i]}",
+                keep_proportion=False,
+            )
 
         document.save(dst_pdf_filename, deflate=True)
 
@@ -35,7 +40,8 @@ class PdfHandler:
         for img in images:
             os.remove(f"images/{img}")
 
-    def insert_images(pdf, img_folder_path, img_folder):
+    @classmethod
+    def insert_images(cls, pdf, img_folder_path, img_folder):
         document = fitz.open(pdf)
 
         new_name = pdf.split(".pdf")[0] + "_Final.pdf"
@@ -52,6 +58,10 @@ class PdfHandler:
             else:
                 img_rect = fitz.Rect(220, 305, 832, 585)
 
-            page.insert_image(img_rect, filename=img_folder_path + "/" + img_folder[i])
+            page.insert_image(
+                img_rect,
+                filename=img_folder_path + "/" + img_folder[i],
+                keep_proportion=False,
+            )
 
         document.save(new_name, deflate=True)
