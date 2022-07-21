@@ -157,6 +157,9 @@ class GraphicInterface:
             if event == Sg.WIN_CLOSED:
                 break
             elif event == "Salvar":
+                for i in range(4):
+                    if values[i]:
+                        print(f"Selecionado foi: {layout[i + 1][0].Text}")
                 break
 
         window.close()
