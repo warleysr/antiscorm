@@ -1,6 +1,8 @@
 import os
 import fitz
 
+# A4 LANDSCAPE: (842, 595)
+
 
 class PdfHandler:
     def generate_pdf(filename):
@@ -19,9 +21,10 @@ class PdfHandler:
             page_number = i // 2
             page = document[page_number]
             if (i + 1) % 2:
-                img_rect = fitz.Rect(0, 0, 200, 200)
+                img_rect = fitz.Rect(0, 0, 200, 287)
             else:
-                img_rect = fitz.Rect(0, 300, 200, 500)
+                img_rect = fitz.Rect(0, 305, 200, 585)
+
             page.insert_image(img_rect, filename=f"images/{images[i]}")
 
         document.save(dst_pdf_filename, deflate=True)
@@ -32,6 +35,23 @@ class PdfHandler:
         for img in images:
             os.remove(f"images/{img}")
 
+    def insert_images(pdf, img_folder_path, img_folder):
+        document = fitz.open(pdf)
 
-if __name__ == "__main__":
-    PdfHandler().generate_pdf()
+        new_name = pdf.split(".pdf")[0] + "_Final.pdf"
+
+        for i in range(len(img_folder)):
+            page_number = i // 2
+            page = document[page_number]
+
+            if not (page.is_wrapped):
+                page.wrap_contents()
+
+            if (i + 1) % 2:
+                img_rect = fitz.Rect(220, 10, 832, 287)
+            else:
+                img_rect = fitz.Rect(220, 305, 832, 585)
+
+            page.insert_image(img_rect, filename=img_folder_path + "/" + img_folder[i])
+
+        document.save(new_name, deflate=True)
