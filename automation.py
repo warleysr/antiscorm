@@ -13,9 +13,6 @@ from webdriver_manager.firefox import GeckoDriverManager
 # Edge
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
-# Opera
-from webdriver_manager.opera import OperaDriverManager
-
 # Others
 from constants import Constants, Conversions
 from pdf.pdf_handler import PdfHandler
@@ -41,8 +38,6 @@ class BrowserAutomation:
                 )
             elif browser == "Edge":
                 driver = webdriver.Edge(EdgeChromiumDriverManager().install())
-            elif browser == "Opera":
-                driver = webdriver.Opera(executable_path=OperaDriverManager().install())
 
         except Exception as e:
             antiscorm.Logger.log(traceback.format_exc(), antiscorm.Logger.LogType.ERROR)

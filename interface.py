@@ -136,7 +136,7 @@ class GraphicInterface:
 
     def select_browser(self):
         selected = self.config["navegador"]
-        browsers = ("Chrome", "Firefox", "Edge", "Opera")
+        browsers = ("Chrome", "Firefox", "Edge")
 
         gen_font = "Arial 12 bold"
         c = "lightgreen"
@@ -163,7 +163,7 @@ class GraphicInterface:
             if event == Sg.WIN_CLOSED:
                 break
             elif event == "Salvar":
-                for i in range(4):
+                for i in range(len(browsers)):
                     if values[i]:
                         self.config["navegador"] = browsers[i]
                         antiscorm.save_config(self.config)
