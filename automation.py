@@ -20,6 +20,7 @@ from ctypes import windll
 import interface
 import antiscorm
 import traceback
+import re
 
 
 class BrowserAutomation:
@@ -62,19 +63,25 @@ class BrowserAutomation:
         raw_data = driver.find_element(By.CLASS_NAME, "scorm-text").text
         raw_data = raw_data.replace("\n", " ").replace(",", "")
 
-        shrinked = raw_data
+        """shrinked = raw_data
         for text in cls.antiscorm["textos"]:
-            shrinked = shrinked.replace(text, "")
+            shrinked = shrinked.replace(text, "")"""
 
         values = []
-        sp1 = shrinked.split("=")
+        sp1 = raw_data.split("=")
         for i in range(1, len(sp1)):
             sp2 = sp1[i].strip().split(" ")
             values.append(cls.apply_conversions(sp2))
             if "/" in sp2:
                 values.append(float(sp2[3]))  # Frequency
 
-        return shrinked, values, raw_data
+        for regex in cls.antiscorm["regex"]:
+            group = cls.antiscorm["regex"][regex]
+            search = re.search(regex, raw_data)
+            if search is not None:
+                values.append(float(search.group(group)))
+
+        return raw_data, values, raw_data
 
     @classmethod
     def apply_conversions(cls, splitted):
@@ -136,7 +143,7 @@ class BrowserAutomation:
             )
 
             for desired, var in antiscorm["desejado"].items():
-                if raw.endswith(desired):
+                if desired in raw:
                     driver.find_element(By.NAME, "resposta").send_keys(calculated[var])
 
                     driver.save_screenshot(f"images/questao{i:0>2}.png")

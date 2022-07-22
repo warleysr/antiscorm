@@ -26,11 +26,7 @@ class PdfHandler:
             else:
                 img_rect = fitz.Rect(7, 305, 200, 585)
 
-            page.insert_image(
-                img_rect,
-                filename=f"images/{images[i]}",
-                keep_proportion=False,
-            )
+            page.insert_image(img_rect, filename=f"images/{images[i]}")
 
         document.save(dst_pdf_filename, deflate=True)
 
