@@ -1,14 +1,16 @@
 import re
 import json
 import os
+import automation
+import antiscorm
 import PySimpleGUI as Sg
 from json.decoder import JSONDecodeError
-from automation import BrowserAutomation
 from pdf.pdf_handler import PdfHandler
 
 
 class GraphicInterface:
-    def __init__(self):
+    def __init__(self, config):
+        self.config = config
         gen_font = "Arial 12 bold"
 
         menu_opt = [
@@ -64,7 +66,9 @@ class GraphicInterface:
                             antiscorm = json.load(arq)
 
                             window.disappear()
-                            BrowserAutomation.perform_automation(url, antiscorm)
+                            automation.BrowserAutomation.perform_automation(
+                                url, antiscorm, self.config["navegador"]
+                            )
                             break
 
                     except FileNotFoundError:
@@ -130,25 +134,27 @@ class GraphicInterface:
 
         window.close()
 
-    def finish_popup(scorm_name):
-        Sg.PopupOK(
-            f"Scorm '{scorm_name}' executado com sucesso!"
-            + " Verifique o PDF na pasta 'finalizados'.",
-            title="AntiScorm",
-            font="Arial 12 bold",
-        )
-
     def select_browser(self):
+        selected = self.config["navegador"]
+        browsers = ("Chrome", "Firefox", "Edge", "Opera")
+
         gen_font = "Arial 12 bold"
         c = "lightgreen"
-        layout = [
-            [Sg.Text("Selecione o nevegador a ser utilizado:", font=gen_font)],
-            [Sg.Radio("Chrome", "b", default=True, font=gen_font, text_color=c)],
-            [Sg.Radio("Firefox", "b", font=gen_font, text_color=c)],
-            [Sg.Radio("Edge", "b", font=gen_font, text_color=c)],
-            [Sg.Radio("Opera", "b", font=gen_font, text_color=c)],
-            [Sg.Push(), Sg.Button("Salvar"), Sg.Push()],
-        ]
+
+        layout = [[Sg.Text("Selecione o nevegador a ser utilizado:", font=gen_font)]]
+        for browser in browsers:
+            layout.append(
+                [
+                    Sg.Radio(
+                        browser,
+                        "b",
+                        default=True if browser == selected else False,
+                        font=gen_font,
+                        text_color=c,
+                    )
+                ]
+            )
+        layout.append([Sg.Push(), Sg.Button("Salvar"), Sg.Push()])
 
         window = Sg.Window("Selecionar navegador", layout)
 
@@ -159,7 +165,26 @@ class GraphicInterface:
             elif event == "Salvar":
                 for i in range(4):
                     if values[i]:
-                        print(f"Selecionado foi: {layout[i + 1][0].Text}")
+                        self.config["navegador"] = browsers[i]
+                        antiscorm.save_config(self.config)
                 break
 
         window.close()
+
+    @classmethod
+    def finish_popup(cls, scorm_name):
+        Sg.PopupOK(
+            f"Scorm '{scorm_name}' executado com sucesso!"
+            + " Verifique o PDF na pasta 'finalizados'.",
+            title="AntiScorm",
+            font="Arial 12 bold",
+        )
+
+    @classmethod
+    def driver_error_popup(cls):
+        Sg.PopupError(
+            "Erro ao instalar o Driver de Automação. Verifique sua conexão com a internet e"
+            + " o arquivo log.txt na pasta do AntiScorm.",
+            font="Arial 12 bold",
+            title="AntiScorm",
+        )

@@ -1,30 +1,54 @@
+# Selenium
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+
+# Chrome
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
+
+# Firefox
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from webdriver_manager.firefox import GeckoDriverManager
+
+# Edge
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
+
+# Opera
+from webdriver_manager.opera import OperaDriverManager
+
+# Others
 from constants import Constants, Conversions
 from pdf.pdf_handler import PdfHandler
 from ctypes import windll
-import PySimpleGUI
+import interface
+import antiscorm
+import traceback
 
 
 class BrowserAutomation:
     antiscorm = {}
 
     @classmethod
-    def start_driver(cls, url):
+    def start_driver(cls, url, browser):
         try:
-            service = ChromeService(executable_path=ChromeDriverManager().install())
-        except:
-            PySimpleGUI.PopupError(
-                "Erro ao instalar o Driver de Automação. Verifique sua conexão com a internet e"
-                + " o arquivo log.txt na pasta do AntiScorm.",
-                font="Arial 12 bold",
-                title="AntiScorm",
-            )
-            exit(-1)
+            if browser == "Chrome":
+                driver = webdriver.Chrome(
+                    service=ChromeService(ChromeDriverManager().install())
+                )
+            elif browser == "Firefox":
+                driver = webdriver.Firefox(
+                    service=FirefoxService(GeckoDriverManager().install())
+                )
+            elif browser == "Edge":
+                driver = webdriver.Edge(EdgeChromiumDriverManager().install())
+            elif browser == "Opera":
+                driver = webdriver.Opera(executable_path=OperaDriverManager().install())
 
-        driver = webdriver.Chrome(service=service)
+        except Exception as e:
+            antiscorm.Logger.log(traceback.format_exc(), antiscorm.Logger.LogType.ERROR)
+
+            interface.GraphicInterface.driver_error_popup()
+            exit(-1)
 
         w, h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)
 
@@ -102,10 +126,10 @@ class BrowserAutomation:
         return calculated
 
     @classmethod
-    def perform_automation(cls, url, antiscorm):
+    def perform_automation(cls, url, antiscorm, browser):
         cls.antiscorm = antiscorm
 
-        driver = cls.start_driver(url)
+        driver = cls.start_driver(url, browser)
 
         questions = antiscorm["questoes"]
 
@@ -130,9 +154,4 @@ class BrowserAutomation:
 
         driver.quit()
 
-        PySimpleGUI.PopupOK(
-            f"Scorm '{antiscorm['nome']}' executado com sucesso!"
-            + " Verifique o PDF na pasta 'finalizados'.",
-            title="AntiScorm",
-            font="Arial 12 bold",
-        )
+        interface.GraphicInterface.finish_popup(antiscorm["nome"])

@@ -1,5 +1,5 @@
-from interface import GraphicInterface
 from enum import Enum
+import interface
 import time
 import json
 
@@ -32,8 +32,15 @@ class Logger:
         Logger.__instance.write_log(f"[{current_time}]{type.value}{text}")
 
 
+def save_config(config):
+    with open("config.json", "w") as arq:
+        json.dump(config, arq)
+
+
 if __name__ == "__main__":
+    # Load config file
     with open("config.json", "r") as arq:
         config = json.load(arq)
 
-    GraphicInterface()
+    # Initialize GUI
+    interface.GraphicInterface(config)
