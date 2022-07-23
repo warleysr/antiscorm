@@ -7,9 +7,8 @@ import fitz
 
 class PdfHandler:
     @classmethod
-    def generate_pdf(cls, filename):
-        images = os.listdir("images")
-        pages = (len(images) // 2) - 1
+    def generate_pdf(cls, filename, img_folder_path, img_folder):
+        pages = (len(img_folder) // 2) - 1
 
         src_pdf_filename = "pdf/template.pdf"
         dst_pdf_filename = f"finalizados/{filename}.pdf"
@@ -19,7 +18,7 @@ class PdfHandler:
         for i in range(pages):
             document.fullcopy_page(0)
 
-        for i in range(len(images)):
+        for i in range(len(img_folder)):
             page_number = i // 2
             page = document[page_number]
             if (i + 1) % 2:
@@ -27,15 +26,15 @@ class PdfHandler:
             else:
                 img_rect = fitz.Rect(7, 305, 200, 585)
 
-            page.insert_image(img_rect, filename=f"images/{images[i]}")
+            page.insert_image(img_rect, filename=img_folder_path + "/" + img_folder[i])
 
         document.save(dst_pdf_filename, deflate=True)
 
         document.close()
 
-        # Remove images after finish
+        """# Remove images after finish
         for img in images:
-            os.remove(f"images/{img}")
+            os.remove(f"images/{img}")"""
 
     @classmethod
     def insert_images(cls, pdf, img_folder_path, img_folder):

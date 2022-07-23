@@ -18,7 +18,7 @@ from constants import Constants, Conversions
 from pdf.pdf_handler import PdfHandler
 from ctypes import windll
 import interface
-import antiscorm
+import antiscorm as asm
 import traceback
 import re
 
@@ -142,13 +142,14 @@ class BrowserAutomation:
                 if desired in raw:
                     driver.find_element(By.NAME, "resposta").send_keys(calculated[var])
 
-                    driver.save_screenshot(f"images/questao{i:0>2}.png")
+                    driver.save_screenshot(f"imagens/questao{i:0>2}.png")
 
                     driver.find_element(By.NAME, "responder").submit()
 
         # Generate PDF
         filename = f"Scorm {antiscorm['nome']}"
-        PdfHandler.generate_pdf(filename)
+        img_folder = asm.get_sorted_folder("imagens")
+        PdfHandler.generate_pdf(filename, "imagens", img_folder)
 
         driver.quit()
 

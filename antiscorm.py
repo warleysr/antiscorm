@@ -2,6 +2,12 @@ from enum import Enum
 import interface
 import time
 import json
+import os
+
+
+class Modes(Enum):
+    FULL = "Totalmente automático"
+    SEMI = "Semi-automático"
 
 
 class Logger:
@@ -35,6 +41,10 @@ class Logger:
 def save_config(config):
     with open("config.json", "w") as arq:
         json.dump(config, arq)
+
+
+def get_sorted_folder(path):
+    return sorted(os.listdir(path), key=len)
 
 
 if __name__ == "__main__":

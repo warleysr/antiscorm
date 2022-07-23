@@ -12,9 +12,19 @@ class GraphicInterface:
     def __init__(self, config):
         self.config = config
         gen_font = "Arial 12 bold"
+        self.gen_font = gen_font
+        self.c = "lightgreen"
 
         menu_opt = [
-            ["Opções", ["Inserir imagens no PDF final", "Selecionar navegador"]],
+            [
+                "Opções",
+                [
+                    "Gerar PDF com prints",
+                    "Inserir fotos no PDF",
+                    "Selecionar modo",
+                    "Selecionar navegador",
+                ],
+            ],
             ["Sobre", ["Sobre o AntiScorm"]],
         ]
 
@@ -80,48 +90,18 @@ class GraphicInterface:
                             "Erro no arquivo de configuração. Fale com o criador do mesmo.",
                             font=gen_font,
                         )
-            elif event == "Inserir imagens no PDF final":
-                filepath = Sg.PopupGetFile(
-                    "Selecione o PDF gerado pelo AntiScorm",
-                    font=gen_font,
-                    file_types=[("PDF do Scorm", ".pdf")],
-                )
-                if filepath is None:
-                    continue
-                elif filepath == "":
-                    Sg.PopupError("Nenhum arquivo foi selecionado", font=gen_font)
-                    continue
+            elif event == "Gerar PDF com prints":
+                self.gen_prints_pdf()
 
-                folderpath = Sg.PopupGetFolder(
-                    "Selecione a pasta contendo as imagens", font=gen_font
-                )
-                if folderpath is None:
-                    continue
-                elif folderpath == "":
-                    Sg.PopupError("Nenhuma pasta foi selecionada", font=gen_font)
-                    continue
+            elif event == "Inserir fotos no PDF":
+                self.insert_photos_pdf()
 
-                folder = sorted(os.listdir(folderpath), key=len)
-                print(folder)
-                img_count = 0
-                for file in folder:
-                    if file.endswith(".png") or file.endswith(".jpg"):
-                        img_count += 1
-                if len(folder) == 0 or img_count == 0:
-                    Sg.PopupError(
-                        "A pasta selecionada não contém imagens.", font=gen_font
-                    )
-                    continue
-
-                # Start placing images on PDF
-                PdfHandler.insert_images(filepath, folderpath, folder)
-
-                Sg.PopupOK(
-                    f"Foram inseridas {img_count} imagens no PDF final.", font=gen_font
-                )
+            elif event == "Selecionar modo":
+                self.select_mode()
 
             elif event == "Selecionar navegador":
                 self.select_browser()
+
             elif event == "Sobre o AntiScorm":
                 Sg.PopupOK(
                     "Versão: 1.0.0\n\nO AntiScorm foi criado com o objetivo de facilitar a"
@@ -135,14 +115,121 @@ class GraphicInterface:
 
         window.close()
 
+    def gen_prints_pdf(self):
+        """
+        Função que cria a janela e gerencia as opções de inserção de prints
+        """
+        gf = self.gen_font
+        folderpath = Sg.PopupGetFolder("Selecione a pasta contendo os prints", font=gf)
+        if folderpath is None:
+            return
+        elif folderpath == "":
+            Sg.PopupError("Nenhuma pasta foi selecionada", font=gf)
+            return
+
+        folder = antiscorm.get_sorted_folder(folderpath)
+        img_count = 0
+        for file in folder:
+            if file.endswith(".png") or file.endswith(".jpg"):
+                img_count += 1
+        if len(folder) == 0 or img_count == 0:
+            Sg.PopupError("A pasta selecionada não contém imagens.", font=gf)
+            return
+
+        name = Sg.PopupGetText("Informe o nome desse SCORM:", font=gf)
+        if name is None:
+            Sg.PopupError("Nome informado inválido.", font=gf)
+            return
+        # Generate new PDF with selected folder images
+        filename = f"Scorm {name}"
+        PdfHandler.generate_pdf(filename, folderpath, folder)
+
+        Sg.PopupOK(
+            f"Foi gerado o PDF com {img_count} imagens. Verifique a pasta 'finalizados'.",
+            font=gf,
+        )
+
+    def insert_photos_pdf(self):
+        """
+        Função que cria a janela e gerencia as opções de inserção de fotos
+        """
+        gf = self.gen_font
+        filepath = Sg.PopupGetFile(
+            "Selecione o PDF gerado pelo AntiScorm",
+            font=gf,
+            file_types=[("PDF do Scorm", ".pdf")],
+        )
+        if filepath is None:
+            return
+        elif filepath == "":
+            Sg.PopupError("Nenhum arquivo foi selecionado", font=gf)
+            return
+
+        folderpath = Sg.PopupGetFolder("Selecione a pasta contendo as fotos", font=gf)
+        if folderpath is None:
+            return
+        elif folderpath == "":
+            Sg.PopupError("Nenhuma pasta foi selecionada", font=gf)
+            return
+
+        folder = antiscorm.get_sorted_folder(folderpath)
+        img_count = 0
+        for file in folder:
+            if file.endswith(".png") or file.endswith(".jpg"):
+                img_count += 1
+        if len(folder) == 0 or img_count == 0:
+            Sg.PopupError("A pasta selecionada não contém imagens.", font=gf)
+            return
+
+        # Start placing images on PDF
+        PdfHandler.insert_images(filepath, folderpath, folder)
+
+        Sg.PopupOK(f"Foram inseridas {img_count} imagens no PDF final.", font=gf)
+
+    def select_mode(self):
+        """
+        Função que cria a janela e gerencia a opção de seleção do modo
+        """
+        layout = [[Sg.Text("Selecione o modo de execução:", font=self.gen_font)]]
+        for mode in antiscorm.Modes:
+            layout.append(
+                [
+                    Sg.Radio(
+                        mode.value,
+                        "m",
+                        default=True if mode.name == self.config["modo"] else False,
+                        font=self.gen_font,
+                        text_color=self.c,
+                    )
+                ]
+            )
+        layout.append([Sg.Push(), Sg.Button("Salvar"), Sg.Push()])
+
+        window = Sg.Window("Selecionar modo", layout)
+
+        while True:
+            event, values = window.read()
+            if event == Sg.WIN_CLOSED:
+                break
+            elif event == "Salvar":
+                for i, mode in enumerate(antiscorm.Modes):
+                    if values[i]:
+                        self.config["modo"] = mode.name
+                        antiscorm.save_config(self.config)
+                break
+
+        window.close()
+
     def select_browser(self):
+        """
+        Função que cria a janela e gerencia a opção de seleção do navegador
+        """
         selected = self.config["navegador"]
         browsers = ("Chrome", "Firefox", "Edge")
 
-        gen_font = "Arial 12 bold"
-        c = "lightgreen"
-
-        layout = [[Sg.Text("Selecione o nevegador a ser utilizado:", font=gen_font)]]
+        layout = [
+            [Sg.Text("Selecione o navegador a ser utilizado:", font=self.gen_font)]
+        ]
         for browser in browsers:
             layout.append(
                 [
@@ -150,8 +237,8 @@ class GraphicInterface:
                         browser,
                         "b",
                         default=True if browser == selected else False,
-                        font=gen_font,
-                        text_color=c,
+                        font=self.gen_font,
+                        text_color=self.c,
                     )
                 ]
             )
