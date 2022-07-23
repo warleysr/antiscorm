@@ -1,6 +1,7 @@
 import os
 import fitz
 
+
 # A4 LANDSCAPE: (842, 595)
 
 
@@ -46,18 +47,11 @@ class PdfHandler:
             page_number = i // 2
             page = document[page_number]
 
-            if not (page.is_wrapped):
-                page.wrap_contents()
-
             if (i + 1) % 2:
                 img_rect = fitz.Rect(220, 10, 832, 287)
             else:
                 img_rect = fitz.Rect(220, 305, 832, 585)
 
-            page.insert_image(
-                img_rect,
-                filename=img_folder_path + "/" + img_folder[i],
-                keep_proportion=False,
-            )
+            page.insert_image(img_rect, filename=img_folder_path + "/" + img_folder[i])
 
         document.save(new_name, deflate=True)

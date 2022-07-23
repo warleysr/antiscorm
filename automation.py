@@ -63,10 +63,6 @@ class BrowserAutomation:
         raw_data = driver.find_element(By.CLASS_NAME, "scorm-text").text
         raw_data = raw_data.replace("\n", " ").replace(",", "")
 
-        """shrinked = raw_data
-        for text in cls.antiscorm["textos"]:
-            shrinked = shrinked.replace(text, "")"""
-
         values = []
         sp1 = raw_data.split("=")
         for i in range(1, len(sp1)):

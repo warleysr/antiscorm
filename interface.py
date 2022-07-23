@@ -101,7 +101,8 @@ class GraphicInterface:
                     Sg.PopupError("Nenhuma pasta foi selecionada", font=gen_font)
                     continue
 
-                folder = os.listdir(folderpath)
+                folder = sorted(os.listdir(folderpath), key=len)
+                print(folder)
                 img_count = 0
                 for file in folder:
                     if file.endswith(".png") or file.endswith(".jpg"):
