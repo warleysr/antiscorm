@@ -61,8 +61,9 @@ class PdfHandler:
     @classmethod
     def generate_formulas_pdf(cls, foldername, filename, description):
         document = fitz.open()
+        lines = len(description)
         lpp = 15  # Lines per page
-        pages = len(description) // lpp
+        pages = (lines // lpp) + 1
         p = fitz.Point(50, 72)
 
         for i in range(pages):
@@ -70,6 +71,8 @@ class PdfHandler:
 
             text = ""
             for j in range(i * lpp, i * lpp + lpp):
+                if j == lines:
+                    break
                 text += description[j] + "\n\n"
 
             page.insert_text(p, text, fontname="helv", fontsize=16)

@@ -84,7 +84,10 @@ class BrowserAutomation:
         for conv in asm.Conversions:
             if conv.name in splitted:
                 new_value = value * conv.value
-                description.append(f"{value:.2f} * {conv.value:.6f} = {new_value:.2f}")
+                description.append(
+                    f"{cls.format_value(value)} * {cls.format_value(conv.value)} "
+                    + f"= {cls.format_value(new_value)}"
+                )
                 return new_value
         return value
 
@@ -115,15 +118,20 @@ class BrowserAutomation:
                 calculated[form] = value
 
                 # Add used formula to generate PDF later
-                text = f"{form} = {expr}"
-                if any([x in expr for x in ("+", "-", "*", "/")]):
-                    text += f" = {value:.2f}"
-                description.append(text)
+                try:
+                    line = f"{form} = {cls.format_value(float(expr))}"
+                except ValueError:
+                    line = f"{form} = {expr}"
+                    if any([x in expr for x in ("+", "-", "*", "/")]):
+                        line += f" = {cls.format_value(value)}"
+
+                description.append(line.replace(".", ","))
             except:
                 pass
 
             # Apply conditionals variables
             for cond in conditions:
+                # Loop through each text conditions
                 for sec in conditions[cond]:
                     aim = conditions[cond][sec]
                     if sec in text and aim in calculated:
@@ -142,7 +150,7 @@ class BrowserAutomation:
 
         if mode == asm.ExecMode.FULL:
             for i in range(1, questions + 1):
-                description.append(f"Questão {i}")
+                description.append(f" Questão {i} ".center(50, "="))
 
                 text, values, raw = cls.parse_data(driver, description)
 
@@ -180,3 +188,14 @@ class BrowserAutomation:
             pass
 
         driver.quit()
+
+    @classmethod
+    def format_value(cls, value: float) -> str:
+        if value >= 1:
+            if value.is_integer():
+                return f"{value:.0f}"
+            return f"{value:.2f}"
+        elif value >= 1e-3:
+            return f"{(value * 1e3):.2f} m"
+        else:
+            return f"{(value * 1e6):.2f} u"
