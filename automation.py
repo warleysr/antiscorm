@@ -14,7 +14,6 @@ from webdriver_manager.firefox import GeckoDriverManager
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 # Others
-from constants import Constants, Conversions
 from pdf.pdf_handler import PdfHandler
 from ctypes import windll
 import interface
@@ -41,7 +40,7 @@ class BrowserAutomation:
                 driver = webdriver.Edge(EdgeChromiumDriverManager().install())
 
         except Exception as e:
-            antiscorm.Logger.log(traceback.format_exc(), antiscorm.Logger.LogType.ERROR)
+            asm.Logger.log(traceback.format_exc(), asm.Logger.LogType.ERROR)
 
             interface.GraphicInterface.driver_error_popup()
             exit(-1)
@@ -57,7 +56,7 @@ class BrowserAutomation:
         return driver
 
     @classmethod
-    def parse_data(cls, driver):
+    def parse_data(cls, driver, description):
         driver.execute_script("document.body.style.zoom='120%'")
 
         raw_data = driver.find_element(By.CLASS_NAME, "scorm-text").text
@@ -67,7 +66,7 @@ class BrowserAutomation:
         sp1 = raw_data.split("=")
         for i in range(1, len(sp1)):
             sp2 = sp1[i].strip().split(" ")
-            values.append(cls.apply_conversions(sp2))
+            values.append(cls.apply_conversions(sp2, description))
             if "/" in sp2:
                 values.append(float(sp2[3]))  # Frequency
 
@@ -80,15 +79,17 @@ class BrowserAutomation:
         return raw_data, values, raw_data
 
     @classmethod
-    def apply_conversions(cls, splitted):
+    def apply_conversions(cls, splitted, description):
         value = float(splitted[0])
-        for conv in Conversions:
+        for conv in asm.Conversions:
             if conv.name in splitted:
-                return value * conv.value
+                new_value = value * conv.value
+                description.append(f"{value:.2f} * {conv.value:.6f} = {new_value:.2f}")
+                return new_value
         return value
 
     @classmethod
-    def apply_formulas(cls, values, formulas, text, conditions):
+    def apply_formulas(cls, values, formulas, text, conditions, description):
         calculated = {}
         for form in formulas:
             expr = formulas[form]
@@ -97,7 +98,7 @@ class BrowserAutomation:
                 expr = expr.replace(f"${{{i}}}", str(values[i]))
 
             # Apply constants
-            for const in Constants:
+            for const in asm.Constants:
                 expr = expr.replace(f"${{{const.name}}}", str(const.value))
 
             # Apply previous calculated values
@@ -108,10 +109,17 @@ class BrowserAutomation:
                 value = eval(expr)
                 if value >= 1:
                     value = round(value, 2)
-                elif value > Conversions.mA.value:
+                elif value > asm.Conversions.mA.value:
                     value = float(str(value)[:5])  # Scorm mA round
+
                 calculated[form] = value
-            except ValueError:
+
+                # Add used formula to generate PDF later
+                text = f"{form} = {expr}"
+                if any([x in expr for x in ("+", "-", "*", "/")]):
+                    text += f" = {value:.2f}"
+                description.append(text)
+            except:
                 pass
 
             # Apply conditionals variables
@@ -121,36 +129,54 @@ class BrowserAutomation:
                     if sec in text and aim in calculated:
                         calculated[cond] = calculated[aim]
 
-        return calculated
+        return calculated, description
 
     @classmethod
-    def perform_automation(cls, url, antiscorm, browser):
+    def perform_automation(cls, url, antiscorm, browser, mode):
         cls.antiscorm = antiscorm
 
         driver = cls.start_driver(url, browser)
 
         questions = antiscorm["questoes"]
+        description = []
 
-        for i in range(1, questions + 1):
-            text, values, raw = cls.parse_data(driver)
+        if mode == asm.ExecMode.FULL:
+            for i in range(1, questions + 1):
+                description.append(f"Questão {i}")
 
-            calculated = cls.apply_formulas(
-                values, antiscorm["formulas"], text, antiscorm["condicionais"]
-            )
+                text, values, raw = cls.parse_data(driver, description)
 
-            for desired, var in antiscorm["desejado"].items():
-                if desired in raw:
-                    driver.find_element(By.NAME, "resposta").send_keys(calculated[var])
+                calculated, desc = cls.apply_formulas(
+                    values,
+                    antiscorm["formulas"],
+                    text,
+                    antiscorm["condicionais"],
+                    description,
+                )
 
-                    driver.save_screenshot(f"imagens/questao{i:0>2}.png")
+                for desired, var in antiscorm["desejado"].items():
+                    if desired in raw:
+                        driver.find_element(By.NAME, "resposta").send_keys(
+                            calculated[var]
+                        )
 
-                    driver.find_element(By.NAME, "responder").submit()
+                        driver.save_screenshot(f"imagens/questao{i:0>2}.png")
 
-        # Generate PDF
-        filename = f"Scorm {antiscorm['nome']}"
-        img_folder = asm.get_sorted_folder("imagens")
-        PdfHandler.generate_pdf(filename, "imagens", img_folder)
+                        driver.find_element(By.NAME, "responder").submit()
+
+            # Generate scorm PDF
+            foldername = antiscorm["nome"]
+            filename = f"Scorm {foldername}"
+            img_folder = asm.get_sorted_folder("imagens")
+            PdfHandler.generate_pdf(foldername, filename, "imagens", img_folder)
+
+            # Generate formulas PDF
+            filename += "_Formulas"
+            PdfHandler.generate_formulas_pdf(foldername, filename, desc)
+
+            interface.GraphicInterface.finish_popup(antiscorm["nome"])
+
+        elif mode == asm.ExecMode.SEMI:
+            pass
 
         driver.quit()
-
-        interface.GraphicInterface.finish_popup(antiscorm["nome"])

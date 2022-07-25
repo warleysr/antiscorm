@@ -1,8 +1,7 @@
 import re
 import json
-import os
 import automation
-import antiscorm
+import antiscorm as asm
 import PySimpleGUI as Sg
 from json.decoder import JSONDecodeError
 from pdf.pdf_handler import PdfHandler
@@ -76,8 +75,9 @@ class GraphicInterface:
                             antiscorm = json.load(arq)
 
                             window.disappear()
+                            mode = asm.ExecMode[self.config["modo"]]
                             automation.BrowserAutomation.perform_automation(
-                                url, antiscorm, self.config["navegador"]
+                                url, antiscorm, self.config["navegador"], mode
                             )
                             break
 
@@ -127,7 +127,7 @@ class GraphicInterface:
             Sg.PopupError("Nenhuma pasta foi selecionada", font=gf)
             return
 
-        folder = antiscorm.get_sorted_folder(folderpath)
+        folder = asm.get_sorted_folder(folderpath)
         img_count = 0
         for file in folder:
             if file.endswith(".png") or file.endswith(".jpg"):
@@ -172,7 +172,7 @@ class GraphicInterface:
             Sg.PopupError("Nenhuma pasta foi selecionada", font=gf)
             return
 
-        folder = antiscorm.get_sorted_folder(folderpath)
+        folder = asm.get_sorted_folder(folderpath)
         img_count = 0
         for file in folder:
             if file.endswith(".png") or file.endswith(".jpg"):
@@ -191,7 +191,7 @@ class GraphicInterface:
         Função que cria a janela e gerencia a opção de seleção do modo
         """
         layout = [[Sg.Text("Selecione o modo de execução:", font=self.gen_font)]]
-        for mode in antiscorm.Modes:
+        for mode in asm.ExecMode:
             layout.append(
                 [
                     Sg.Radio(
@@ -212,10 +212,10 @@ class GraphicInterface:
             if event == Sg.WIN_CLOSED:
                 break
             elif event == "Salvar":
-                for i, mode in enumerate(antiscorm.Modes):
+                for i, mode in enumerate(asm.ExecMode):
                     if values[i]:
                         self.config["modo"] = mode.name
-                        antiscorm.save_config(self.config)
+                        asm.save_config(self.config)
                 break
 
         window.close()
@@ -254,7 +254,7 @@ class GraphicInterface:
                 for i in range(len(browsers)):
                     if values[i]:
                         self.config["navegador"] = browsers[i]
-                        antiscorm.save_config(self.config)
+                        asm.save_config(self.config)
                 break
 
         window.close()
