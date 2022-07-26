@@ -1,5 +1,6 @@
 import re
 import json
+import traceback
 import automation
 import antiscorm as asm
 import PySimpleGUI as Sg
@@ -82,10 +83,12 @@ class GraphicInterface:
                             break
 
                     except FileNotFoundError:
+                        asm.Logger.log(traceback.format_exc(), asm.Logger.LogType.ERROR)
                         Sg.PopupError(
                             "O arquivo selecionado não foi encontrado.", font=gen_font
                         )
                     except JSONDecodeError:
+                        asm.Logger.log(traceback.format_exc(), asm.Logger.LogType.ERROR)
                         Sg.PopupError(
                             "Erro no arquivo de configuração. Fale com o criador do mesmo.",
                             font=gen_font,
@@ -107,8 +110,8 @@ class GraphicInterface:
                     "Versão: 1.0.0\n\nO AntiScorm foi criado com o objetivo de facilitar a"
                     + " realização das atividades SCORM do IFMG Betim.\n\nO objetivo do AntiScorm NÃO é"
                     + " promover o uso inconsciente de informações mas facilitar o trabalho manual de quem"
-                    + " já compreendeu o assunto.\n\nA principal vantagem é a geração automática do relatório"
-                    + "em PDF no formato requerido.",
+                    + " já compreendeu o assunto.\n\nO principal objetivo é a geração automática do relatório"
+                    + " em PDF no formato requerido.",
                     title=event,
                     font=gen_font,
                 )

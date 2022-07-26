@@ -15,11 +15,12 @@ from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 # Others
 from pdf.pdf_handler import PdfHandler
-from ctypes import windll
+from screeninfo import get_monitors
 import interface
 import antiscorm as asm
 import traceback
 import re
+import os
 
 
 class BrowserAutomation:
@@ -45,7 +46,9 @@ class BrowserAutomation:
             interface.GraphicInterface.driver_error_popup()
             exit(-1)
 
-        w, h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)
+        m = get_monitors()[0]
+        w = m.width
+        h = m.height
 
         driver.set_window_rect((w - 700) // 2, 0, 700, h)
 
@@ -127,7 +130,7 @@ class BrowserAutomation:
 
                 description.append(line.replace(".", ","))
             except:
-                pass
+                asm.Logger.log(traceback.format_exc(), asm.Logger.LogType.ERROR)
 
             # Apply conditionals variables
             for cond in conditions:
@@ -147,6 +150,8 @@ class BrowserAutomation:
 
         questions = antiscorm["questoes"]
         description = []
+
+        os.makedirs("imagens", exist_ok=True)
 
         if mode == asm.ExecMode.FULL:
             for i in range(1, questions + 1):
