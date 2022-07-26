@@ -145,7 +145,7 @@ class GraphicInterface:
             return
         # Generate new PDF with selected folder images
         filename = f"Scorm {name}"
-        PdfHandler.generate_pdf(filename, folderpath, folder)
+        PdfHandler.generate_pdf(filename, folderpath, folderpath, folder)
 
         Sg.PopupOK(
             f"Foi gerado o PDF com {img_count} imagens. Verifique a pasta 'finalizados'.",
@@ -266,32 +266,32 @@ class GraphicInterface:
     def verify_popup(cls, question, answer):
         gen_font = "Arial 12 bold"
         guess = Sg.popup_get_text(
-            f"Informe sua resposta para a questão {question}:", 
+            f"Informe sua resposta para a questão {question}:",
             "Verificar resposta",
-            font=gen_font
+            font=gen_font,
         )
         if guess is not None:
             try:
                 guess_val = float(guess)
-                if (abs(guess_val - answer) <= 0.02*answer):
+                if abs(guess_val - answer) <= 0.02 * answer:
                     Sg.PopupOK("Parabéns! Resposta correta.", font=gen_font)
                     return guess
                 else:
-                    Sg.PopupError("Resposta incorreta! Tente novamente.",font=gen_font)
+                    Sg.PopupError("Resposta incorreta! Tente novamente.", font=gen_font)
                     return cls.verify_popup(question, answer)
 
             except ValueError:
                 Sg.PopupError(
                     "Resposta inválida! Atenção ao valor digitado na caixa de texto.",
-                    title="Resposta inválida", 
-                    font=gen_font
+                    title="Resposta inválida",
+                    font=gen_font,
                 )
                 return cls.verify_popup(question, answer)
         else:
             Sg.PopupOK(
                 f"A resposta correta da questão {question} era: {answer}",
                 title=f"Resposta da {question}",
-                font=gen_font
+                font=gen_font,
             )
             return None
 
