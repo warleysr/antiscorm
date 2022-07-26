@@ -1,5 +1,6 @@
 from enum import Enum
 from math import pi
+from natsort import natsorted
 import interface
 import time
 import json
@@ -56,7 +57,7 @@ def save_config(config):
 
 
 def get_sorted_folder(path):
-    return sorted(os.listdir(path), key=len)
+    return natsorted(os.listdir(path))
 
 
 if __name__ == "__main__":

@@ -187,7 +187,7 @@ class BrowserAutomation:
                             calculated[var]
                         )
 
-                        driver.save_screenshot(f"imagens/questao{i:0>2}.png")
+                        driver.save_screenshot(f"imagens/questao{i}.png")
 
                         driver.find_element(By.NAME, "responder").submit()
 
@@ -195,7 +195,6 @@ class BrowserAutomation:
             foldername = antiscorm["nome"]
             filename = f"Scorm {foldername}"
             img_folder = asm.get_sorted_folder("imagens")
-            # print(img_folder)
             PdfHandler.generate_pdf(foldername, filename, "imagens", img_folder)
 
             # Generate formulas PDF
