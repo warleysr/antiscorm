@@ -12,14 +12,16 @@
         "ViMin": "${Treg} + 3",
         "Vond": "${ViMax} - ${ViMin}",
         "Imax0": "${Treg} / ${0}",
-        "Imax1": "${0} / ${Treg}",
-        "C": "${Imax} / (${2} * ${Vond})"
+        "Imax1": "${0} / ${Treg}"
     },
     "condicionais": {
         "Imax": {
             "RL": "Imax0",
             "Potência em RL": "Imax1"
         }
+    },
+    "finais": {
+        "C": "${Imax} / (${2} * ${Vond})"
     },
     "regex": {
         "LM(78|79)(\\d{2,2})": 2

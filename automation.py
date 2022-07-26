@@ -89,58 +89,76 @@ class BrowserAutomation:
                 new_value = value * conv.value
                 description.append(
                     f"{cls.format_value(value)} * {cls.format_value(conv.value)} "
-                    + f"= {cls.format_value(new_value)}"
+                    .replace(".", ",") + f"= {cls.format_value(new_value)}"
+                    .replace(".", ",")
                 )
                 return new_value
         return value
 
     @classmethod
-    def apply_formulas(cls, values, formulas, text, conditions, description):
+    def apply_formulas(cls, antiscorm, values, text, description):
         calculated = {}
+        formulas = antiscorm["formulas"]
+        conditions = antiscorm["condicionais"]
+        finals = antiscorm["finais"]
+
         for form in formulas:
             expr = formulas[form]
-            # Apply given values
-            for i in range(len(values)):
-                expr = expr.replace(f"${{{i}}}", str(values[i]))
+            cls.evaluate_expression(form, values, calculated, expr, description)
 
-            # Apply constants
-            for const in asm.Constants:
-                expr = expr.replace(f"${{{const.name}}}", str(const.value))
+        # Apply conditionals variables
+        for cond in conditions:
+            
+            for sec in conditions[cond]:
+                aim = conditions[cond][sec]
 
-            # Apply previous calculated values
-            for var, val in calculated.items():
-                expr = expr.replace(f"${{{var}}}", str(val))
+                if sec in text and aim in calculated:
+                    calculated[cond] = calculated[aim]
 
-            try:
-                value = eval(expr)
-                if value >= 1:
-                    value = round(value, 2)
-                elif value > asm.Conversions.mA.value:
-                    value = float(str(value)[:5])  # Scorm mA round
+            description.append(f"{cond} = {aim} = {cls.format_value(calculated[aim])}"
+                .replace(".", ","))
 
-                calculated[form] = value
-
-                # Add used formula to generate PDF later
-                try:
-                    line = f"{form} = {cls.format_value(float(expr))}"
-                except ValueError:
-                    line = f"{form} = {expr}"
-                    if any([x in expr for x in ("+", "-", "*", "/")]):
-                        line += f" = {cls.format_value(value)}"
-
-                description.append(line.replace(".", ","))
-            except:
-                asm.Logger.log(traceback.format_exc(), asm.Logger.LogType.ERROR)
-
-            # Apply conditionals variables
-            for cond in conditions:
-                # Loop through each text conditions
-                for sec in conditions[cond]:
-                    aim = conditions[cond][sec]
-                    if sec in text and aim in calculated:
-                        calculated[cond] = calculated[aim]
-
+        # Apply final formulas
+        for final in finals:
+            expr = finals[final]
+            cls.evaluate_expression(final, values, calculated, expr, description)
+                
         return calculated, description
+
+    @classmethod
+    def evaluate_expression(cls, form, values, calculated, expr, description):
+        # Apply given values
+        for i in range(len(values)):
+            expr = expr.replace(f"${{{i}}}", str(values[i]))
+
+        # Apply constants
+        for const in asm.Constants:
+            expr = expr.replace(f"${{{const.name}}}", str(const.value))
+
+        # Apply previous calculated values
+        for var, val in calculated.items():
+            expr = expr.replace(f"${{{var}}}", str(val))
+
+        try:
+            value = eval(expr)
+            if value >= 1:
+                value = round(value, 2)
+            elif value > asm.Conversions.mA.value:
+                value = float(str(value)[:5])  # Scorm mA round
+
+            calculated[form] = value
+
+            # Add used formula to generate PDF later
+            try:
+                line = f"{form} = {cls.format_value(float(expr))}"
+            except ValueError:
+                line = f"{form} = {expr}"
+                if any([x in expr for x in ("+", "-", "*", "/")]):
+                    line += f" = {cls.format_value(value)}"
+
+            description.append(line.replace(".", ","))
+        except:
+            asm.Logger.log(traceback.format_exc(), asm.Logger.LogType.ERROR)
 
     @classmethod
     def perform_automation(cls, url, antiscorm, browser, mode):
@@ -160,11 +178,7 @@ class BrowserAutomation:
                 text, values, raw = cls.parse_data(driver, description)
 
                 calculated, desc = cls.apply_formulas(
-                    values,
-                    antiscorm["formulas"],
-                    text,
-                    antiscorm["condicionais"],
-                    description,
+                    antiscorm, values, text, description
                 )
 
                 for desired, var in antiscorm["desejado"].items():
@@ -181,6 +195,7 @@ class BrowserAutomation:
             foldername = antiscorm["nome"]
             filename = f"Scorm {foldername}"
             img_folder = asm.get_sorted_folder("imagens")
+            # print(img_folder)
             PdfHandler.generate_pdf(foldername, filename, "imagens", img_folder)
 
             # Generate formulas PDF
