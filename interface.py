@@ -145,7 +145,7 @@ class GraphicInterface:
             return
         # Generate new PDF with selected folder images
         filename = f"Scorm {name}"
-        PdfHandler.generate_pdf(filename, folderpath, folderpath, folder)
+        PdfHandler.generate_pdf(name, filename, folderpath, folder)
 
         Sg.PopupOK(
             f"Foi gerado o PDF com {img_count} imagens. Verifique a pasta 'finalizados'.",
