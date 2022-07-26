@@ -263,6 +263,39 @@ class GraphicInterface:
         window.close()
 
     @classmethod
+    def verify_popup(cls, question, answer):
+        gen_font = "Arial 12 bold"
+        guess = Sg.popup_get_text(
+            f"Informe sua resposta para a questão {question}:", 
+            "Verificar resposta",
+            font=gen_font
+        )
+        if guess is not None:
+            try:
+                guess_val = float(guess)
+                if (abs(guess_val - answer) <= 0.02*answer):
+                    Sg.PopupOK("Parabéns! Resposta correta.", font=gen_font)
+                    return guess
+                else:
+                    Sg.PopupError("Resposta incorreta! Tente novamente.",font=gen_font)
+                    return cls.verify_popup(question, answer)
+
+            except ValueError:
+                Sg.PopupError(
+                    "Resposta inválida! Atenção ao valor digitado na caixa de texto.",
+                    title="Resposta inválida", 
+                    font=gen_font
+                )
+                return cls.verify_popup(question, answer)
+        else:
+            Sg.PopupOK(
+                f"A resposta correta da questão {question} era: {answer}",
+                title=f"Resposta da {question}",
+                font=gen_font
+            )
+            return None
+
+    @classmethod
     def finish_popup(cls, scorm_name):
         Sg.PopupOK(
             f"Scorm '{scorm_name}' executado com sucesso!"

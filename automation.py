@@ -171,40 +171,43 @@ class BrowserAutomation:
 
         os.makedirs("imagens", exist_ok=True)
 
-        if mode == asm.ExecMode.FULL:
-            for i in range(1, questions + 1):
-                description.append(f" Questão {i} ".center(50, "="))
+        for i in range(1, questions + 1):
+            description.append(f" Questão {i} ".center(50, "="))
 
-                text, values, raw = cls.parse_data(driver, description)
+            text, values, raw = cls.parse_data(driver, description)
 
-                calculated, desc = cls.apply_formulas(
-                    antiscorm, values, text, description
-                )
+            calculated, desc = cls.apply_formulas(
+                antiscorm, values, text, description
+            )
 
-                for desired, var in antiscorm["desejado"].items():
-                    if desired in raw:
+            for desired, var in antiscorm["desejado"].items():
+                if desired in raw:
+                    if mode == asm.ExecMode.FULL:
                         driver.find_element(By.NAME, "resposta").send_keys(
                             calculated[var]
                         )
+                    else:
+                        answer = calculated[var]
+                        guess = interface.GraphicInterface.verify_popup(i, answer)
+                        if guess is not None:
+                            answer = guess
+                        driver.find_element(By.NAME, "resposta").send_keys(answer)
+                            
 
-                        driver.save_screenshot(f"imagens/questao{i}.png")
+                    driver.save_screenshot(f"imagens/questao{i}.png")
+                    driver.find_element(By.NAME, "responder").submit()
 
-                        driver.find_element(By.NAME, "responder").submit()
+        # Generate scorm PDF
+        foldername = antiscorm["nome"]
+        filename = f"Scorm {foldername}"
+        img_folder = asm.get_sorted_folder("imagens")
+        PdfHandler.generate_pdf(foldername, filename, "imagens", img_folder)
 
-            # Generate scorm PDF
-            foldername = antiscorm["nome"]
-            filename = f"Scorm {foldername}"
-            img_folder = asm.get_sorted_folder("imagens")
-            PdfHandler.generate_pdf(foldername, filename, "imagens", img_folder)
+        # Generate formulas PDF
+        filename += "_Formulas"
+        PdfHandler.generate_formulas_pdf(foldername, filename, desc)
 
-            # Generate formulas PDF
-            filename += "_Formulas"
-            PdfHandler.generate_formulas_pdf(foldername, filename, desc)
-
-            interface.GraphicInterface.finish_popup(antiscorm["nome"])
-
-        elif mode == asm.ExecMode.SEMI:
-            pass
+        interface.GraphicInterface.finish_popup(antiscorm["nome"])
 
         driver.quit()
 

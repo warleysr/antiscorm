@@ -14,8 +14,8 @@ class Constants(Enum):
 
 class Conversions(Enum):
     Vrms = Constants.RAIZ_2.value
-    uF = 0.000001
-    mA = 0.001
+    uF = 1e-6
+    mA = 1e-3
 
 
 class ExecMode(Enum):
