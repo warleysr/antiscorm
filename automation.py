@@ -46,11 +46,13 @@ class BrowserAutomation:
             interface.GraphicInterface.driver_error_popup()
             exit(-1)
 
+        # Define the browser position on the screen
         m = get_monitors()[0]
         w = m.width
         h = m.height
 
-        driver.set_window_rect((w - 700) // 2, 0, 700, h)
+        dw = int(0.36458333*w)
+        driver.set_window_rect((w - dw) // 2, 0, dw, h)
 
         driver.get(url)
 
