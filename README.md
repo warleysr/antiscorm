@@ -27,8 +27,8 @@ instaladas automaticamente ao executar o setup.
 
 ### Imagens
 <img src="https://i.imgur.com/y2nE1qT.png" width="250"/><br>
-<img src="https://i.imgur.com/OOQSrlo.png" width="150"/><br>
-<img src="https://i.imgur.com/AH90jUn.png" width="150"/>
+<img src="https://i.imgur.com/OOQSrlo.png" width="250"/><br>
+<img src="https://i.imgur.com/AH90jUn.png" width="250"/>
 
 ### Vídeos
 
