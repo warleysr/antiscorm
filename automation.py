@@ -71,36 +71,38 @@ class BrowserAutomation:
         values = {}
 
         for var in regex:
-            expr = regex[var]["expr"]
-            group = regex[var]["group"]
-
-            search = re.search(expr, raw_data)
+            search = re.search(regex[var], raw_data)
 
             if search is not None:
-                value = float(search.group(group))
+                value = float(search.group(1))
 
-                if "conversion" in regex[var]:
-                    conversion = search.group(regex[var]["conversion"])
-                    value = cls.apply_conversion(var, value, conversion, description)
+                if len(search.groups()) == 2:
+                    conversion = search.group(2)
+                    value = cls.apply_conversions(var, value, conversion, description)
 
                 values[var] = value
 
         return raw_data, values
 
     @classmethod
-    def apply_conversion(cls, var, value, conversion, description):
+    def apply_conversions(cls, var, value, conversion, description):
         for conv in asm.Conversions:
             if conv.name == conversion:
-                new_value = value * conv.value
-                if value >= 1:
+                new_value = value * conv.value[0]
+
+                if new_value >= 1:
                     new_value = round(new_value, 2)
 
-                description.append(
-                    f"# Convertendo {var} {conv.name}: \n"
-                    + f"{var} = {cls.format_value(value)} * "
-                    + f"{cls.format_value(conv.value)} ".replace(".", ",")
-                    + f"= {cls.format_value(new_value)}".replace(".", ",")
-                )
+                # Skip add to description if it's just internal conversion
+                if conv.value[1]:
+                    description.append(
+                        (
+                            f"# Convertendo {var} {conv.name}: \n"
+                            + f"{var} = {cls.format_value(value)} * "
+                            + f"{cls.format_value(conv.value[0])} "
+                            + f"= {cls.format_value(new_value)}"
+                        ).replace(".", ",")
+                    )
                 return new_value
         return value
 
@@ -117,6 +119,10 @@ class BrowserAutomation:
 
             # Apply previous calculated values
             for var, val in calculated.items():
+                # Check if expression depends of relative variable
+                if "->@" in expr:
+                    expr = expr.replace("${" + f"{var[:-1]}" + "->@}", str(val))
+
                 expr = expr.replace(f"${{{var}}}", str(val))
 
             # Check if expression is able to be evaluated
@@ -127,8 +133,8 @@ class BrowserAutomation:
                 value = eval(expr)
                 if value >= 1:
                     value = round(value, 2)
-                elif value > asm.Conversions.mA.value:
-                    value = float(str(value)[:5])  # Scorm mA round
+                elif value > asm.Conversions.mA.value[0]:
+                    value = float(str(value)[:5])  # Scorm mA rounding
 
                 calculated[form] = value
 
@@ -176,8 +182,8 @@ class BrowserAutomation:
 
             cls.apply_formulas(antiscorm, calculated, description)
 
-            for desired, var in antiscorm["desejado"].items():
-                if desired in text:
+            for aim, var in antiscorm["objetivo"].items():
+                if aim in text:
                     if "->*" in var:
                         to_send = cls.format_value(calculated[var[:-3]], False)
                     else:
