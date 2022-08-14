@@ -72,7 +72,7 @@ class GraphicInterface:
                     )
                 else:
                     try:
-                        with open(filepath, "r") as arq:
+                        with open(filepath, "r", encoding="utf-8") as arq:
                             antiscorm = json.load(arq)
 
                             window.disappear()
@@ -309,6 +309,15 @@ class GraphicInterface:
         Sg.PopupError(
             "Erro ao instalar o Driver de Automação. Verifique sua conexão com a internet e"
             + " o arquivo log.txt na pasta do AntiScorm.",
+            font="Arial 12 bold",
+            title="AntiScorm",
+        )
+
+    @classmethod
+    def process_error_popup(cls):
+        Sg.PopupError(
+            "Erro ao processar dados da questão, veja o log e fale com o criador"
+            + " da configuração. Termine o SCORM manualmente.",
             font="Arial 12 bold",
             title="AntiScorm",
         )

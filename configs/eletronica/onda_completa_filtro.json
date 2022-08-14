@@ -1,0 +1,58 @@
+{
+    "nome": "onda completa com filtro",
+    "questoes": 10,
+    "regex": {
+        "RL": {
+            "expr": "RL = (\\d{1,}(?:\\.\\d{1,})?)",
+            "group": 1
+        },
+        "Vin": {
+            "expr": "Vin = (\\d{1,}) (Vpp|Vrms)",
+            "group": 1,
+            "conversion": 2
+        },
+        "F": {
+            "expr": "a (\\d{1,}) Hz",
+            "group": 1
+        },
+        "Vmed": {
+            "expr": "carga de (\\d{1,}\\.\\d{1,}) V",
+            "group": 1
+        },
+        "Vd": {
+            "expr": "diodo = (\\d{1,}.\\d{1,}) V",
+            "group": 1
+        },
+        "%Vond": {
+            "expr": "vale (\\d{1,})%",
+            "group": 1
+        },
+        "N1\\N2": {
+            "expr": "N1/N2 = (\\d{1,})",
+            "group": 1
+        },
+        "C": {
+            "expr": "(\\d{1,}) uF",
+            "group": 1
+        }
+    },
+    "formulas": {
+        "Imax": "${Vmed} / ${RL}",
+        "Vpsec0": "${Vin} / ${N1\\N2}",
+        "Vimax0": "${Vpsec0} - ${Vd}",
+        "Vond0": "${Vimax0} * (${%Vond} / 100)",
+        "Cap": "${Imax} / (2 * ${F} * ${Vond0})",
+        
+        "Vond1": "${Imax} / (2 * ${F} * ${C})",
+        "Vimax1": "${Vond} / (${%Vond}/100)",
+        "Vpsec1": "${Vimax1} + ${Vd}",
+        "N1/N2": "${Vin} / ${Vpsec1}",
+        "Ratio": "1 / ${N1/N2}"
+    },
+    "desejado": {
+        "calcule a relação de espiras": "N1/N2",
+        "calcule o ratio": "Ratio",
+        "calcule o capacitor": "Cap->*"
+
+    }
+}

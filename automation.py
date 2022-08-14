@@ -44,14 +44,14 @@ class BrowserAutomation:
             asm.Logger.log(traceback.format_exc(), asm.Logger.LogType.ERROR)
 
             interface.GraphicInterface.driver_error_popup()
-            exit(-1)
+            exit(0)
 
         # Define the browser position on the screen
         m = get_monitors()[0]
         w = m.width
         h = m.height
 
-        dw = int(0.36458333*w)
+        dw = int(0.36458333 * w)
         driver.set_window_rect((w - dw) // 2, 0, dw, h)
 
         driver.get(url)
@@ -65,102 +65,90 @@ class BrowserAutomation:
         driver.execute_script("document.body.style.zoom='120%'")
 
         raw_data = driver.find_element(By.CLASS_NAME, "scorm-text").text
-        raw_data = raw_data.replace("\n", " ").replace(",", "")
+        raw_data = raw_data.replace("\n", " ")
 
-        values = []
-        sp1 = raw_data.split("=")
-        for i in range(1, len(sp1)):
-            sp2 = sp1[i].strip().split(" ")
-            values.append(cls.apply_conversions(sp2, description))
-            if "/" in sp2:
-                values.append(float(sp2[3]))  # Frequency
+        regex = cls.antiscorm["regex"]
+        values = {}
 
-        for regex in cls.antiscorm["regex"]:
-            group = cls.antiscorm["regex"][regex]
-            search = re.search(regex, raw_data)
+        for var in regex:
+            expr = regex[var]["expr"]
+            group = regex[var]["group"]
+
+            search = re.search(expr, raw_data)
+
             if search is not None:
-                values.append(float(search.group(group)))
+                value = float(search.group(group))
 
-        return raw_data, values, raw_data
+                if "conversion" in regex[var]:
+                    conversion = search.group(regex[var]["conversion"])
+                    value = cls.apply_conversion(var, value, conversion, description)
+
+                values[var] = value
+
+        return raw_data, values
 
     @classmethod
-    def apply_conversions(cls, splitted, description):
-        value = float(splitted[0])
+    def apply_conversion(cls, var, value, conversion, description):
         for conv in asm.Conversions:
-            if conv.name in splitted:
+            if conv.name == conversion:
                 new_value = value * conv.value
+                if value >= 1:
+                    new_value = round(new_value, 2)
+
                 description.append(
-                    f"{cls.format_value(value)} * {cls.format_value(conv.value)} "
-                    .replace(".", ",") + f"= {cls.format_value(new_value)}"
-                    .replace(".", ",")
+                    f"# Convertendo {var} {conv.name}: \n"
+                    + f"{var} = {cls.format_value(value)} * "
+                    + f"{cls.format_value(conv.value)} ".replace(".", ",")
+                    + f"= {cls.format_value(new_value)}".replace(".", ",")
                 )
                 return new_value
         return value
 
     @classmethod
-    def apply_formulas(cls, antiscorm, values, text, description):
-        calculated = {}
+    def apply_formulas(cls, antiscorm, calculated, description):
         formulas = antiscorm["formulas"]
-        conditions = antiscorm["condicionais"]
-        finals = antiscorm["finais"]
 
         for form in formulas:
             expr = formulas[form]
-            cls.evaluate_expression(form, values, calculated, expr, description)
 
-        # Apply conditionals variables
-        for cond in conditions:
-            
-            for sec in conditions[cond]:
-                aim = conditions[cond][sec]
+            # Apply constants
+            for const in asm.Constants:
+                expr = expr.replace(f"${{{const.name}}}", str(const.value))
 
-                if sec in text and aim in calculated:
-                    calculated[cond] = calculated[aim]
+            # Apply previous calculated values
+            for var, val in calculated.items():
+                expr = expr.replace(f"${{{var}}}", str(val))
 
-            description.append(f"{cond} = {aim} = {cls.format_value(calculated[aim])}"
-                .replace(".", ","))
+            # Check if expression is able to be evaluated
+            if "$" in expr:
+                continue
 
-        # Apply final formulas
-        for final in finals:
-            expr = finals[final]
-            cls.evaluate_expression(final, values, calculated, expr, description)
-                
-        return calculated, description
-
-    @classmethod
-    def evaluate_expression(cls, form, values, calculated, expr, description):
-        # Apply given values
-        for i in range(len(values)):
-            expr = expr.replace(f"${{{i}}}", str(values[i]))
-
-        # Apply constants
-        for const in asm.Constants:
-            expr = expr.replace(f"${{{const.name}}}", str(const.value))
-
-        # Apply previous calculated values
-        for var, val in calculated.items():
-            expr = expr.replace(f"${{{var}}}", str(val))
-
-        try:
-            value = eval(expr)
-            if value >= 1:
-                value = round(value, 2)
-            elif value > asm.Conversions.mA.value:
-                value = float(str(value)[:5])  # Scorm mA round
-
-            calculated[form] = value
-
-            # Add used formula to generate PDF later
             try:
-                line = f"{form} = {cls.format_value(float(expr))}"
-            except ValueError:
-                line = f"{form} = {expr}"
-                if any([x in expr for x in ("+", "-", "*", "/")]):
-                    line += f" = {cls.format_value(value)}"
+                value = eval(expr)
+                if value >= 1:
+                    value = round(value, 2)
+                elif value > asm.Conversions.mA.value:
+                    value = float(str(value)[:5])  # Scorm mA round
 
-            description.append(line.replace(".", ","))
-        except:
-            asm.Logger.log(traceback.format_exc(), asm.Logger.LogType.ERROR)
+                calculated[form] = value
+
+                # Add used formula to generate PDF later
+                if form[-1].isnumeric():
+                    form = form[:-1]
+                try:
+                    line = f"{form} = {cls.format_value(float(expr))}"
+                except ValueError:
+                    line = f"{form} = {expr}"
+                    if any([x in expr for x in ("+", "-", "*", "/")]):
+                        line += f" = {cls.format_value(value)}"
+
+                description.append(line.replace(".", ","))
+            except:
+                asm.Logger.log(traceback.format_exc(), asm.Logger.LogType.ERROR)
+                interface.GraphicInterface.process_error_popup()
+                exit(0)
+
+        return calculated, description
 
     @classmethod
     def perform_automation(cls, url, antiscorm, browser, mode):
@@ -176,25 +164,33 @@ class BrowserAutomation:
         for i in range(1, questions + 1):
             description.append(f" Questão {i} ".center(50, "="))
 
-            text, values, raw = cls.parse_data(driver, description)
+            text, calculated = cls.parse_data(driver, description)
 
-            calculated, desc = cls.apply_formulas(
-                antiscorm, values, text, description
-            )
+            given = "# Dados: \n"
+            for j, key in enumerate(calculated):
+                given += f"{key} = {cls.format_value(calculated[key])}; "
+                if (j + 1) % 5 == 0:
+                    given += "\n"
+
+            description.append(given[:-2].replace(".", ","))
+
+            cls.apply_formulas(antiscorm, calculated, description)
 
             for desired, var in antiscorm["desejado"].items():
-                if desired in raw:
-                    if mode == asm.ExecMode.FULL:
-                        driver.find_element(By.NAME, "resposta").send_keys(
-                            calculated[var]
-                        )
+                if desired in text:
+                    if "->*" in var:
+                        to_send = cls.format_value(calculated[var[:-3]], False)
                     else:
-                        answer = calculated[var]
+                        to_send = calculated[var]
+
+                    if mode == asm.ExecMode.FULL:
+                        driver.find_element(By.NAME, "resposta").send_keys(to_send)
+                    else:
+                        answer = float(to_send)
                         guess = interface.GraphicInterface.verify_popup(i, answer)
                         if guess is not None:
                             answer = guess
                         driver.find_element(By.NAME, "resposta").send_keys(answer)
-                            
 
                     driver.save_screenshot(f"imagens/questao{i}.png")
                     driver.find_element(By.NAME, "responder").submit()
@@ -207,19 +203,21 @@ class BrowserAutomation:
 
         # Generate formulas PDF
         filename += "_Formulas"
-        PdfHandler.generate_formulas_pdf(foldername, filename, desc)
+        PdfHandler.generate_formulas_pdf(foldername, filename, description)
 
         interface.GraphicInterface.finish_popup(antiscorm["nome"])
 
         driver.quit()
 
     @classmethod
-    def format_value(cls, value: float) -> str:
-        if value >= 1:
+    def format_value(cls, value: float, unity: bool = True) -> str:
+        if value == asm.Constants.RAIZ_2.value:
+            return "raiz(2)"
+        elif value >= 1e-1:
             if value.is_integer():
                 return f"{value:.0f}"
             return f"{value:.2f}"
         elif value >= 1e-3:
-            return f"{(value * 1e3):.2f} m"
+            return f"{(value * 1e3):.2f}{' m' if unity else ''}"
         else:
-            return f"{(value * 1e6):.2f} u"
+            return f"{(value * 1e6):.2f}{' u' if unity else ''}"
