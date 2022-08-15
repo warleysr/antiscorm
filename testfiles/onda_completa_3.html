@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scorm</title>
+</head>
+<body>
+    <style>
+        body {
+            background-color: rgb(132, 156, 157);
+        }
+    </style>
+    <script>
+        
+        window.onload = function() {
+            const queryString = window.location.search;
+            const urlParams = new URLSearchParams(queryString);
+            const questao = urlParams.get('questao');
+
+            if (questao == null) {
+                nq = 1;
+            }
+            else {
+                nq = parseInt(questao);
+            }
+            document.getElementById("disp").innerHTML = nq + ") ";
+            document.getElementById("questao").setAttribute("value", nq + 1);
+            
+        }
+    </script>
+    <form action="onda_completa_3.html" name="responder">
+        <div class="scorm-text" style="font-size: 22px; font-weight: bold;">
+            <input type="hidden" id="questao" name="questao"></input><span style="color: red;" id="disp"></span>
+            Dados: RL = 83.6 &ohm;, Vin = 178 Vpp a 60 Hz,<br>
+            tensão média na carga de 4.1 V, Vd do diodo = 0.7<br>
+            V, Vond vale 19% de Vimax, calcule a relação de<br>
+            espiras N1/N2 do Trafo.<br><br>
+            475 uF
+            <br><br>
+        </div>
+        <input type="text" name="resposta"></input><br><br>
+        <input type="submit" value="ENVIAR"></input>
+    </form>
+</body>
+</html>

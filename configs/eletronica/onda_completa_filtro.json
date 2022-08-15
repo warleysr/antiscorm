@@ -3,13 +3,13 @@
     "questoes": 10,
     "regex": {
         "RL": "RL = (\\d{1,}(?:\\.\\d{1,})?)",
-        "Vin": "Vin = (\\d{1,}) (Vp|Vpp|Vrms)",
+        "Vin": "Vin = (\\d{1,}) (Vpp|Vrms)",
         "F": "a (\\d{1,}) Hz",
         "Vmed": "carga de (\\d{1,}\\.\\d{1,}) V",
         "Vd": "diodo = (\\d{1,}.\\d{1,}) V",
         "%Vond": "vale (\\d{1,})%",
         "N1\\N2": "N1/N2 = (\\d{1,})",
-        "C": "(\\d{1,}) uF"
+        "C": "(\\d{1,}) (uF)"
     },
     "formulas": {
         "Imax": "${Vmed} / ${RL}",
@@ -19,13 +19,13 @@
         "Cap": "${Imax} / (2 * ${F} * ${Vond0})",
         
         "Vond1": "${Imax} / (2 * ${F} * ${C})",
-        "Vimax1": "${Vond} / (${%Vond}/100)",
-        "Vpsec1": "${Vimax1} + ${Vd}",
+        "Vimax1": "${Vond1} / (${%Vond}/100)",
+        "Vpsec1": "${Vimax1} +  ${Vd}",
         "N1/N2": "${Vin} / ${Vpsec1}",
         "Ratio": "1 / ${N1/N2}"
     },
     "objetivo": {
-        "calcule a relação de espiras": "N1/N2",
+        "calcule a relação de espiras": "N1/N2->#",
         "calcule o ratio": "Ratio",
         "calcule o capacitor": "Cap->*"
 

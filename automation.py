@@ -134,13 +134,14 @@ class BrowserAutomation:
                 if value >= 1:
                     value = round(value, 2)
                 elif value > asm.Conversions.mA.value[0]:
-                    value = float(str(value)[:5])  # Scorm mA rounding
+                    value = float(str(value)[:6])  # Scorm mA rounding
 
                 calculated[form] = value
 
                 # Add used formula to generate PDF later
                 if form[-1].isnumeric():
                     form = form[:-1]
+
                 try:
                     line = f"{form} = {cls.format_value(float(expr))}"
                 except ValueError:
@@ -186,6 +187,8 @@ class BrowserAutomation:
                 if aim in text:
                     if "->*" in var:
                         to_send = cls.format_value(calculated[var[:-3]], False)
+                    elif "->#" in var:
+                        to_send = int(calculated[var[:-3]])
                     else:
                         to_send = calculated[var]
 
