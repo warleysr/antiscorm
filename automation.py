@@ -98,7 +98,7 @@ class BrowserAutomation:
                     description.append(
                         (
                             f"# Convertendo {var} {conv.name}: \n"
-                            + f"{var} = {cls.format_value(value)} * "
+                            + f"{var} = {cls.format_value(value)} \u00d7 "
                             + f"{cls.format_value(conv.value[0])} "
                             + f"= {cls.format_value(new_value)}"
                         ).replace(".", ",")
@@ -119,7 +119,7 @@ class BrowserAutomation:
 
             # Apply previous calculated values
             for var, val in calculated.items():
-                # Check if expression depends of relative variable
+                # ->@ indicate that this expression depends of a relative variable
                 if "->@" in expr:
                     expr = expr.replace("${" + f"{var[:-1]}" + "->@}", str(val))
 
@@ -142,12 +142,8 @@ class BrowserAutomation:
                 if form[-1].isnumeric():
                     form = form[:-1]
 
-                try:
-                    line = f"{form} = {cls.format_value(float(expr))}"
-                except ValueError:
-                    line = f"{form} = {expr}"
-                    if any([x in expr for x in ("+", "-", "*", "/")]):
-                        line += f" = {cls.format_value(value)}"
+                expr = expr.replace("*", "\u00d7").replace("/", "\u00f7")
+                line = f"{form} = {expr} = {cls.format_value(value)}"
 
                 description.append(line.replace(".", ","))
             except:
@@ -185,10 +181,14 @@ class BrowserAutomation:
 
             for aim, var in antiscorm["objetivo"].items():
                 if aim in text:
+                    # ->* forces the answer to be converted before sending
                     if "->*" in var:
                         to_send = cls.format_value(calculated[var[:-3]], False)
+
+                    # -># forces the answer to be an integer value
                     elif "->#" in var:
                         to_send = int(calculated[var[:-3]])
+
                     else:
                         to_send = calculated[var]
 

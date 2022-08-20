@@ -21,11 +21,11 @@
         "Vond1": "${Imax} / (2 * ${F} * ${C})",
         "Vimax1": "${Vond1} / (${%Vond}/100)",
         "Vpsec1": "${Vimax1} +  ${Vd}",
-        "N1/N2": "${Vin} / ${Vpsec1}",
-        "Ratio": "1 / ${N1/N2}"
+        "N1/N20": "${Vin} / ${Vpsec1}",
+        "Ratio": "1 / ${N1/N20}"
     },
     "objetivo": {
-        "calcule a relação de espiras": "N1/N2->#",
+        "calcule a relação de espiras": "N1/N20->#",
         "calcule o ratio": "Ratio",
         "calcule o capacitor": "Cap->*"
 
