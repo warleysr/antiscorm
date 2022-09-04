@@ -16,10 +16,10 @@ from webdriver_manager.microsoft import EdgeChromiumDriverManager
 # Others
 from pdf.pdf_handler import PdfHandler
 from screeninfo import get_monitors
+import datetime
 import interface
 import antiscorm as asm
 import traceback
-import re
 import os
 
 
@@ -52,7 +52,7 @@ class BrowserAutomation:
         h = m.height
 
         dw = int(0.36458333 * w)
-        driver.set_window_rect((w - dw) // 2, 0, dw, h)
+        driver.set_window_rect((w - dw) // 2, 0, dw, 0.95 * h)
 
         driver.get(url)
 
@@ -61,172 +61,92 @@ class BrowserAutomation:
         return driver
 
     @classmethod
-    def parse_data(cls, driver, description):
-        driver.execute_script("document.body.style.zoom='120%'")
+    def perform_automation(cls, url, scorm_pass, browser, mode, ra, senha):
 
-        raw_data = driver.find_element(By.CLASS_NAME, "scorm-text").text
-        raw_data = raw_data.replace("\n", " ")
-
-        regex = cls.antiscorm["regex"]
-        values = {}
-
-        for var in regex:
-            search = re.search(regex[var], raw_data)
-
-            if search is not None:
-                value = float(search.group(1))
-
-                if len(search.groups()) == 2:
-                    conversion = search.group(2)
-                    value = cls.apply_conversions(var, value, conversion, description)
-
-                values[var] = value
-
-        return raw_data, values
-
-    @classmethod
-    def apply_conversions(cls, var, value, conversion, description):
-        for conv in asm.Conversions:
-            if conv.name == conversion:
-                new_value = value * conv.value[0]
-
-                if new_value >= 1:
-                    new_value = round(new_value, 2)
-
-                # Skip add to description if it's just internal conversion
-                if conv.value[1]:
-                    description.append(
-                        (
-                            f"# Convertendo {var} {conv.name}: \n"
-                            + f"{var} = {cls.format_value(value)} \u00d7 "
-                            + f"{cls.format_value(conv.value[0])} "
-                            + f"= {cls.format_value(new_value)}"
-                        ).replace(".", ",")
-                    )
-                return new_value
-        return value
-
-    @classmethod
-    def apply_formulas(cls, antiscorm, calculated, description):
-        formulas = antiscorm["formulas"]
-
-        for form in formulas:
-            expr = formulas[form]
-
-            # Apply constants
-            for const in asm.Constants:
-                expr = expr.replace(f"${{{const.name}}}", str(const.value))
-
-            # Apply previous calculated values
-            for var, val in calculated.items():
-                # ->@ indicate that this expression depends of a relative variable
-                if "->@" in expr:
-                    expr = expr.replace("${" + f"{var[:-1]}" + "->@}", str(val))
-
-                expr = expr.replace(f"${{{var}}}", str(val))
-
-            # Check if expression is able to be evaluated
-            if "$" in expr:
-                continue
-
-            try:
-                value = eval(expr)
-                if value >= 1:
-                    value = round(value, 2)
-                elif value > asm.Conversions.mA.value[0]:
-                    value = float(str(value)[:6])  # Scorm mA rounding
-
-                calculated[form] = value
-
-                # Add used formula to generate PDF later
-                if form[-1].isnumeric():
-                    form = form[:-1]
-
-                expr = expr.replace("*", "\u00d7").replace("/", "\u00f7")
-                line = f"{form} = {expr} = {cls.format_value(value)}"
-
-                description.append(line.replace(".", ","))
-            except:
-                asm.Logger.log(traceback.format_exc(), asm.Logger.LogType.ERROR)
-                interface.GraphicInterface.process_error_popup()
-                exit(0)
-
-        return calculated, description
-
-    @classmethod
-    def perform_automation(cls, url, antiscorm, browser, mode):
-        cls.antiscorm = antiscorm
-
+        # Start automated browser
         driver = cls.start_driver(url, browser)
 
-        questions = antiscorm["questoes"]
-        description = []
+        # Get SCORM name
+        name = driver.execute_script("return document.querySelector('h2').textContent;")
 
+        # Perform AVA login
+        driver.find_element(By.NAME, "username").send_keys(ra)
+        driver.find_element(By.NAME, "password").send_keys(senha)
+        driver.find_element(By.ID, "loginbtn").click()
+
+        # Hide unwanted elements
+        to_hide = (
+            "h2",
+            "#scormtop",
+            "#scorm_toc",
+            "#scorm_toc_toggle",
+            "#scorm_navpanel",
+        )
+        for hide in to_hide:
+            driver.execute_script(
+                f"document.querySelector('{hide}').style.display = 'none'"
+            )
+
+        # Skip SCORM introduction and start exercises
+        iframe = driver.find_element(By.CSS_SELECTOR, "iframe")
+        driver.switch_to.frame(iframe)
+        driver.find_element(By.CSS_SELECTOR, "#Text_InputD > div > input").send_keys(
+            scorm_pass[str(datetime.date.today().year)]
+        )
+        driver.find_element(By.ID, "Button_EnviarD").click()
+        driver.find_element(By.ID, "ProsseguirD").click()
+
+        total = driver.execute_script("return _DWPub.TotalTestes;")
         os.makedirs("imagens", exist_ok=True)
+        generate = False
 
-        for i in range(1, questions + 1):
-            description.append(f" Questão {i} ".center(50, "="))
+        # Repeat until SCORM finishes
+        while True:
+            page = int(driver.execute_script("return _DWPub.Pagina;"))
+            if page == total:
+                break
 
-            text, calculated = cls.parse_data(driver, description)
+            solution = driver.execute_script("return _DWPub.PregSol;").split(" ")
+            answer = solution[0]
 
-            given = "# Dados: \n"
-            for j, key in enumerate(calculated):
-                given += f"{key} = {cls.format_value(calculated[key])}; "
-                if (j + 1) % 5 == 0:
-                    given += "\n"
+            if len(solution) > 1:
+                unit = solution[1].lower()
 
-            description.append(given[:-2].replace(".", ","))
+                if unit == "ma":
+                    answer += "e-3"
+                elif unit == "ua":
+                    answer += "e-6"
+                elif unit == "na":
+                    answer += "e-9"
 
-            cls.apply_formulas(antiscorm, calculated, description)
+            input_field = driver.find_element(
+                By.CSS_SELECTOR, f"#Text_InputD{page} > div > input"
+            )
+            if mode == asm.ExecMode.FULL:
+                input_field.send_keys(answer)
+            else:
+                guess = interface.GraphicInterface.verify_popup(page, answer)
+                if guess is not None:
+                    answer = guess
+                input_field.send_keys(answer)
 
-            for aim, var in antiscorm["objetivo"].items():
-                if aim in text:
-                    # ->* forces the answer to be converted before sending
-                    if "->*" in var:
-                        to_send = cls.format_value(calculated[var[:-3]], False)
+            # Send answer and show solution
+            driver.find_element(By.ID, f"Button_EnviarD{page}").click()
+            driver.find_element(By.ID, f"SolutionD{page-1}").click()
 
-                    # -># forces the answer to be an integer value
-                    elif "->#" in var:
-                        to_send = int(calculated[var[:-3]])
+            # Save screenshot
+            driver.save_screenshot(f"imagens/questao{page}.png")
+            generate = True
 
-                    else:
-                        to_send = calculated[var]
-
-                    if mode == asm.ExecMode.FULL:
-                        driver.find_element(By.NAME, "resposta").send_keys(to_send)
-                    else:
-                        answer = float(to_send)
-                        guess = interface.GraphicInterface.verify_popup(i, answer)
-                        if guess is not None:
-                            answer = guess
-                        driver.find_element(By.NAME, "resposta").send_keys(answer)
-
-                    driver.save_screenshot(f"imagens/questao{i}.png")
-                    driver.find_element(By.NAME, "responder").submit()
+        if not generate:
+            driver.quit()
+            return
 
         # Generate scorm PDF
-        foldername = antiscorm["nome"]
-        filename = f"Scorm {foldername}"
+        filename = f"Scorm {name}"
         img_folder = asm.get_sorted_folder("imagens")
-        PdfHandler.generate_pdf(foldername, filename, "imagens", img_folder)
+        PdfHandler.generate_pdf(name, filename, "imagens", img_folder)
 
-        # Generate formulas PDF
-        filename += "_Formulas"
-        PdfHandler.generate_formulas_pdf(foldername, filename, description)
-
-        interface.GraphicInterface.finish_popup(antiscorm["nome"])
+        interface.GraphicInterface.finish_popup(name)
 
         driver.quit()
-
-    @classmethod
-    def format_value(cls, value: float, unity: bool = True) -> str:
-        if value == asm.Constants.RAIZ_2.value:
-            return "raiz(2)"
-        elif value >= 1e-1:
-            if value.is_integer():
-                return f"{value:.0f}"
-            return f"{value:.2f}"
-        elif value >= 1e-3:
-            return f"{(value * 1e3):.2f}{' m' if unity else ''}"
-        else:
-            return f"{(value * 1e6):.2f}{' u' if unity else ''}"

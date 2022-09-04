@@ -1,1 +1,10 @@
-{"navegador": "Firefox", "modo": "FULL"}
+{
+    "senhas": {
+        "2022": "06yui",
+        "2023": "07uio",
+        "2024": "08iop",
+        "2025": "09opa"
+    },
+    "navegador": "Chrome", 
+    "modo": "FULL"
+}

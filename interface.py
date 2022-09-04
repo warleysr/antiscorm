@@ -1,10 +1,7 @@
 import re
-import json
-import traceback
 import automation
 import antiscorm as asm
 import PySimpleGUI as Sg
-from json.decoder import JSONDecodeError
 from pdf.pdf_handler import PdfHandler
 
 
@@ -36,12 +33,21 @@ class GraphicInterface:
                 Sg.Push(),
             ],
             [Sg.Text("Cole abaixo o link direto do SCORM: ", font=gen_font)],
-            [Sg.InputText(tooltip="Link da janela que abre ao iniciar a atividade")],
-            [Sg.Text("Escolha o arquivo de configuração: ", font=gen_font)],
             [
-                Sg.InputText("Nenhum selecionado", disabled=True),
-                Sg.FileBrowse("Procurar", file_types=[("Arquivo JSON", ".json")]),
+                Sg.InputText(
+                    tooltip="Link da janela que abre ao entrar no SCORM", size=(55, 10)
+                )
             ],
+            [Sg.Push()],
+            [
+                Sg.Text("RA:      ", font=gen_font),
+                Sg.InputText(size=(15, 10)),
+            ],
+            [
+                Sg.Text("Senha:", font=gen_font),
+                Sg.InputText(password_char="\u2022", size=(15, 10)),
+            ],
+            [Sg.Push()],
             [
                 Sg.Push(),
                 Sg.Button(
@@ -51,7 +57,9 @@ class GraphicInterface:
                 ),
                 Sg.Push(),
             ],
+            [Sg.Push()],
         ]
+
         window = Sg.Window("AntiScorm", layout)
 
         while True:
@@ -59,40 +67,32 @@ class GraphicInterface:
             if event == Sg.WIN_CLOSED:
                 break
             elif event == "Iniciar AntiScorm":
-                url = values[1]
-                filepath = values[2]
+                url: str = values[1]
+                ra: str = values[2]
+                senha: str = values[3]
+
                 url_pattern = "^https?:\\/\\/(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)$"
-                if False and (url is None or re.match(url_pattern, url) is None):
+                if url is None or re.match(url_pattern, url) is None:
                     Sg.PopupError(
                         "O link informado não é uma URL válida.", font=gen_font
                     )
-                elif filepath == "Nenhum selecionado":
-                    Sg.PopupError(
-                        "Nenhum arquivo de configuração foi selecionado.", font=gen_font
-                    )
+                elif not ra.isnumeric():
+                    Sg.PopupError("RA não informado ou inválido.", font=gen_font)
+                elif senha == "":
+                    Sg.PopupError("Senha não informada.", font=gen_font)
                 else:
-                    try:
-                        with open(filepath, "r", encoding="utf-8") as arq:
-                            antiscorm = json.load(arq)
+                    window.disappear()
+                    mode = asm.ExecMode[self.config["modo"]]
+                    automation.BrowserAutomation.perform_automation(
+                        url,
+                        self.config["senhas"],
+                        self.config["navegador"],
+                        mode,
+                        ra,
+                        senha,
+                    )
+                    break
 
-                            window.disappear()
-                            mode = asm.ExecMode[self.config["modo"]]
-                            automation.BrowserAutomation.perform_automation(
-                                url, antiscorm, self.config["navegador"], mode
-                            )
-                            break
-
-                    except FileNotFoundError:
-                        asm.Logger.log(traceback.format_exc(), asm.Logger.LogType.ERROR)
-                        Sg.PopupError(
-                            "O arquivo selecionado não foi encontrado.", font=gen_font
-                        )
-                    except JSONDecodeError:
-                        asm.Logger.log(traceback.format_exc(), asm.Logger.LogType.ERROR)
-                        Sg.PopupError(
-                            "Erro no arquivo de configuração. Fale com o criador do mesmo.",
-                            font=gen_font,
-                        )
             elif event == "Gerar PDF com prints":
                 self.gen_prints_pdf()
 

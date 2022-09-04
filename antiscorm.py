@@ -7,18 +7,6 @@ import json
 import os
 
 
-class Constants(Enum):
-    RAIZ_2 = 1.41421356237
-    PI = pi
-
-
-class Conversions(Enum):
-    Vrms = (Constants.RAIZ_2.value, True)
-    Vpp = (0.5, True)
-    uF = (1e-6, False)
-    mA = (1e-3, False)
-
-
 class ExecMode(Enum):
     FULL = "Totalmente automático"
     SEMI = "Semi-automático"
