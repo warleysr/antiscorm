@@ -24,7 +24,8 @@ import os
 
 
 class BrowserAutomation:
-    antiscorm = {}
+    W = 0
+    H = 0
 
     @classmethod
     def start_driver(cls, url, browser):
@@ -52,7 +53,9 @@ class BrowserAutomation:
         h = m.height
 
         dw = int(0.36458333 * w)
-        driver.set_window_rect((w - dw) // 2, 0, dw, 0.95 * h)
+        cls.W = dw
+        cls.H = int(0.95 * h)
+        driver.set_window_rect((w - dw) // 2, 0, dw, cls.H)
 
         driver.get(url)
 
@@ -86,6 +89,18 @@ class BrowserAutomation:
             driver.execute_script(
                 f"document.querySelector('{hide}').style.display = 'none'"
             )
+
+        # Resize iframe and browser window to fit desired screenshot
+        new_width = int(0.59454 * cls.H)
+        new_height = int((0.96 if browser != "Firefox" else 0.92) * cls.H)
+
+        driver.execute_script(
+            "document.body.style.overflow = 'hidden';"
+            + "iFrame = document.querySelector('iframe');"
+            + f"iFrame.style.height = '{new_height}px';"
+            + f"iFrame.style.width  = '{new_width}px';"
+        )
+        driver.set_window_size(1.03 * new_width, 1.04 * new_height)
 
         # Skip SCORM introduction and start exercises
         iframe = driver.find_element(By.CSS_SELECTOR, "iframe")
