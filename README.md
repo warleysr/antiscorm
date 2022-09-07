@@ -26,7 +26,7 @@ instaladas automaticamente ao executar o setup.
 
 
 ### Imagens
-<img src="https://i.imgur.com/y2nE1qT.png" width="250"/><br>
+<img src="https://i.imgur.com/Fnu7JQk.png" width="250"/><br>
 <img src="https://i.imgur.com/OOQSrlo.png" width="250"/><br>
 <img src="https://i.imgur.com/AH90jUn.png" width="250"/>
 
@@ -34,3 +34,4 @@ instaladas automaticamente ao executar o setup.
 
 - Sobre os modos de execução: [Assistir no YouTube](https://youtu.be/yS-AEBD-jMw)
 - Sobre a opção de gerar o relatório PDF com as imagens: [Assistir no YouTube](https://youtu.be/0tjt82uMG64)
+- Sendo executado em uma atividade real: [Assistir no YouTube](https://youtu.be/VhWJOMdorb8)

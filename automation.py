@@ -1,6 +1,7 @@
 # Selenium
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.action_chains import ActionChains
 
 # Chrome
 from selenium.webdriver.chrome.service import Service as ChromeService
@@ -80,7 +81,6 @@ class BrowserAutomation:
         # Hide unwanted elements
         to_hide = (
             "h2",
-            "#scormtop",
             "#scorm_toc",
             "#scorm_toc_toggle",
             "#scorm_navpanel",
@@ -100,7 +100,9 @@ class BrowserAutomation:
             + f"iFrame.style.height = '{new_height}px';"
             + f"iFrame.style.width  = '{new_width}px';"
         )
-        driver.set_window_size(1.03 * new_width, 1.04 * new_height)
+        driver.set_window_size(
+            (1.03 if browser != "Firefox" else 1.02) * new_width, 1.04 * new_height
+        )
 
         # Skip SCORM introduction and start exercises
         iframe = driver.find_element(By.CSS_SELECTOR, "iframe")
@@ -111,21 +113,29 @@ class BrowserAutomation:
         driver.find_element(By.ID, "Button_EnviarD").click()
         driver.find_element(By.ID, "ProsseguirD").click()
 
-        total = driver.execute_script("return _DWPub.TotalTestes;")
         os.makedirs("imagens", exist_ok=True)
         generate = False
 
         # Repeat until SCORM finishes
         while True:
-            page = int(driver.execute_script("return _DWPub.Pagina;"))
-            if page == total:
+            teacher_visibility = driver.execute_script(
+                "return document.querySelector('#TeacherD').style.visibility;"
+            )
+            if teacher_visibility == "visible":
+                driver.minimize_window()
+                interface.GraphicInterface.already_finished_popup()
                 break
 
-            solution = driver.execute_script("return _DWPub.PregSol;").split(" ")
+            page = int(driver.execute_script("return _DWPub.Pagina;"))
+
+            solution = str(driver.execute_script("return _DWPub.PregSol;")).split(" ")
             answer = solution[0]
 
             if len(solution) > 1:
                 unit = solution[1].lower()
+
+                if len(answer) > 6:
+                    answer = answer[:7]
 
                 if unit == "ma":
                     answer += "e-3"
@@ -145,13 +155,19 @@ class BrowserAutomation:
                     answer = guess
                 input_field.send_keys(answer)
 
+            # Question ID for HTML elements
+            qid = page - 1 if page > 1 else ""
+
             # Send answer and show solution
-            driver.find_element(By.ID, f"Button_EnviarD{page}").click()
-            driver.find_element(By.ID, f"SolutionD{page-1}").click()
+            cls.perform_click(driver, f"Button_EnviarD{page}")
+            cls.perform_click(driver, f"SolutionD{qid}")
 
             # Save screenshot
             driver.save_screenshot(f"imagens/questao{page}.png")
             generate = True
+
+            # Go to the next question
+            cls.perform_click(driver, f"ProximoD{qid}")
 
         if not generate:
             driver.quit()
@@ -165,3 +181,8 @@ class BrowserAutomation:
         interface.GraphicInterface.finish_popup(name)
 
         driver.quit()
+
+    @classmethod
+    def perform_click(cls, driver, element_id):
+        element = driver.find_element(By.ID, element_id)
+        ActionChains(driver).move_to_element(element).click().perform()

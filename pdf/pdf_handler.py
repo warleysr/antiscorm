@@ -34,6 +34,10 @@ class PdfHandler:
 
         document.close()
 
+        # Delete images folder
+        if img_folder_path == "imagens":
+            os.rmdir("imagens")
+
     @classmethod
     def insert_images(cls, pdf, img_folder_path, img_folder):
         document = fitz.open(pdf)

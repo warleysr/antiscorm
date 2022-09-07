@@ -1,5 +1,4 @@
 from enum import Enum
-from math import pi
 from natsort import natsorted
 import interface
 import time

@@ -272,8 +272,15 @@ class GraphicInterface:
         )
         if guess is not None:
             try:
-                guess_val = float(guess)
-                if abs(guess_val - answer) <= 0.02 * answer:
+                guess_val = float(eval(guess))
+                answer_v = float(eval(answer))
+
+                ToleMin = 0.975
+                ToleMax = 1.025
+
+                if guess_val >= (ToleMin * answer_v) and guess_val <= (
+                    ToleMax * answer_v
+                ):
                     Sg.PopupOK("Parabéns! Resposta correta.", font=gen_font)
                     return guess
                 else:
@@ -314,10 +321,10 @@ class GraphicInterface:
         )
 
     @classmethod
-    def process_error_popup(cls):
+    def already_finished_popup(cls):
         Sg.PopupError(
-            "Erro ao processar dados da questão, veja o log e fale com o criador"
-            + " da configuração. Termine o SCORM manualmente.",
+            "Este SCORM já foi finalizado. Marque 'Começar uma nova tentativa'"
+            + " na página do SCORM se deseja tentar novamente.",
             font="Arial 12 bold",
             title="AntiScorm",
         )
