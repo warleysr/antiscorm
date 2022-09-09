@@ -122,8 +122,9 @@ class BrowserAutomation:
                 "return document.querySelector('#TeacherD').style.visibility;"
             )
             if teacher_visibility == "visible":
-                driver.minimize_window()
-                interface.GraphicInterface.already_finished_popup()
+                if not generate:
+                    driver.minimize_window()
+                    interface.GraphicInterface.already_finished_popup()
                 break
 
             page = int(driver.execute_script("return _DWPub.Pagina;"))

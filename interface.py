@@ -91,7 +91,7 @@ class GraphicInterface:
                         ra,
                         senha,
                     )
-                    break
+                    window.reappear()
 
             elif event == "Gerar PDF com prints":
                 self.gen_prints_pdf()
@@ -107,7 +107,7 @@ class GraphicInterface:
 
             elif event == "Sobre o AntiScorm":
                 Sg.PopupOK(
-                    "Versão: 1.0.0\n\nO AntiScorm foi criado com o objetivo de facilitar a"
+                    f"Versão: {asm.VERSION}\n\nO AntiScorm foi criado com o objetivo de facilitar a"
                     + " realização das atividades SCORM do IFMG Betim.\n\nO objetivo do AntiScorm NÃO é"
                     + " promover o uso inconsciente de informações mas facilitar o trabalho manual de quem"
                     + " já compreendeu o assunto.\n\nO principal objetivo é a geração automática do relatório"

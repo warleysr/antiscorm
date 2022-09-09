@@ -5,6 +5,8 @@ import time
 import json
 import os
 
+VERSION = "1.0.0"
+
 
 class ExecMode(Enum):
     FULL = "Totalmente automático"

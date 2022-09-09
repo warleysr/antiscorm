@@ -8,7 +8,7 @@ import fitz
 class PdfHandler:
     @classmethod
     def generate_pdf(cls, foldername, filename, img_folder_path, img_folder):
-        pages = (len(img_folder) // 2) - 1
+        pages = ((len(img_folder) + 1) // 2) - 1
 
         src_pdf_filename = "pdf/template.pdf"
         path = f"finalizados/{foldername}"
