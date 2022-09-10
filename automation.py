@@ -70,13 +70,13 @@ class BrowserAutomation:
         # Start automated browser
         driver = cls.start_driver(url, browser)
 
-        # Get SCORM name
-        name = driver.execute_script("return document.querySelector('h2').textContent;")
-
         # Perform AVA login
         driver.find_element(By.NAME, "username").send_keys(ra)
         driver.find_element(By.NAME, "password").send_keys(senha)
         driver.find_element(By.ID, "loginbtn").click()
+
+        # Get SCORM name
+        name = driver.execute_script("return document.querySelector('h2').textContent;")
 
         # Hide unwanted elements
         to_hide = (
